@@ -57,6 +57,11 @@ xml_file <-
 
 write_bpmn(
   xml_file,
-  file.path(getwd(), "test_outputs", "test_write_bpmn", "Golf Club Subscription (write_bpmn version).bpmn"),
+  file.path(
+    getwd(),
+    "test_outputs",
+    "test_write_bpmn",
+    "Golf Club Subscription (write_bpmn version).bpmn"
+  ),
   options = c("format", "as_xml")
 )

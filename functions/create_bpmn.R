@@ -33,7 +33,7 @@ library("purrr")
     bpmn %>%
       bpmn[.] %>%
       names() %>%
-      map(~ .print.output(.x, message_string, elements_empty_allowed))
+      map( ~ .print.output(.x, message_string, elements_empty_allowed))
   }
 
 # Compares attributes available in the data with a minimal subset of attributes
@@ -44,7 +44,8 @@ library("purrr")
            singular_of_bpmn_elements) {
     minimal_subset_attributes <-
       minimal_subset_attributes_list[[bpmn_element]]
-    list_of_logicals <- minimal_subset_attributes %in% bpmn_attributes
+    list_of_logicals <-
+      minimal_subset_attributes %in% bpmn_attributes
     if (!(all(list_of_logicals))) {
       .stop.script(
         minimal_subset_attributes[which(!list_of_logicals)],
@@ -59,7 +60,7 @@ library("purrr")
 # Checks for empty data.frames
 .check.for.empty.data.frames <-
   function(bpmn, elements_empty_allowed) {
-    retrieve_empty_data_frames <- as_mapper(~ nrow(.x) == 0)
+    retrieve_empty_data_frames <- as_mapper( ~ nrow(.x) == 0)
     bpmn %>%
       map_lgl(retrieve_empty_data_frames) %>%
       .print.message("is an empty data.frame.", elements_empty_allowed = elements_empty_allowed)
@@ -71,7 +72,7 @@ library("purrr")
            minimal_subset_attributes_list,
            singular_of_bpmn_elements) {
     bpmn %>%
-      map(~ names(.x)) %>%
+      map( ~ names(.x)) %>%
       keep(is_non_empty) %>%
       imap(
         ~ .compare.attributes(
