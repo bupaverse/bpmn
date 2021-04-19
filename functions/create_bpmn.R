@@ -3,6 +3,7 @@
 # Delete this section when create_bpmn will be included in a package with imports?
 library("assertive")
 library("dplyr")
+library("knitr")
 library("purrr")
 
 # ============================= HELPER FUNCTIONS ===============================
@@ -33,7 +34,7 @@ library("purrr")
     bpmn %>%
       bpmn[.] %>%
       names() %>%
-      map( ~ .print.output(.x, message_string, elements_empty_allowed))
+      map(~ .print.output(.x, message_string, elements_empty_allowed))
   }
 
 # Compares attributes available in the data with a minimal subset of attributes
@@ -47,20 +48,25 @@ library("purrr")
     list_of_logicals <-
       minimal_subset_attributes %in% bpmn_attributes
     if (!(all(list_of_logicals))) {
-      .stop.script(
-        minimal_subset_attributes[which(!list_of_logicals)],
-        " is needed as an attribute of the BPMN element ",
-        singular_of_bpmn_elements[bpmn_element],
-        ".",
-        sep = ""
-      )
+      errors_attributes <-
+        combine_words(minimal_subset_attributes[which(!list_of_logicals)])
+      if (sum(!list_of_logicals) == 1) {
+        error_message <- " is needed as an attribute of the BPMN element "
+      } else {
+        error_message <- " are needed as attributes of the BPMN element "
+      }
+      .stop.script(errors_attributes,
+                   error_message,
+                   singular_of_bpmn_elements[[bpmn_element]],
+                   ".",
+                   sep = "")
     }
   }
 
 # Checks for empty data.frames
 .check.for.empty.data.frames <-
   function(bpmn, elements_empty_allowed) {
-    retrieve_empty_data_frames <- as_mapper( ~ nrow(.x) == 0)
+    retrieve_empty_data_frames <- as_mapper(~ nrow(.x) == 0)
     bpmn %>%
       map_lgl(retrieve_empty_data_frames) %>%
       .print.message("is an empty data.frame.", elements_empty_allowed = elements_empty_allowed)
@@ -72,7 +78,7 @@ library("purrr")
            minimal_subset_attributes_list,
            singular_of_bpmn_elements) {
     bpmn %>%
-      map( ~ names(.x)) %>%
+      map(~ names(.x)) %>%
       keep(is_non_empty) %>%
       imap(
         ~ .compare.attributes(
@@ -103,6 +109,7 @@ library("purrr")
 #'
 #' @import assertive
 #' @import dplyr
+#' @import knitr
 #' @import purrr
 #'
 #' @export
