@@ -224,6 +224,7 @@ golf_club_subscription <-
       "id" = c(
         "sid-E34BD051-438B-4804-9597-73410072D3A6",
         "sid-5D5B1DDF-B775-427D-9426-2870D4B03071",
+        "sid-F3631DA4-BC36-4CC3-A471-760EB1ED1B31",
         "sid-7E6BDDB4-802C-4DF2-A5CC-74486A3A837A",
         "sid-E0EB68AD-A40C-4273-BBA4-8122245B772A",
         "sid-661F8D79-1358-4DB0-9F61-7D74B2D12347",
@@ -234,6 +235,7 @@ golf_club_subscription <-
       "name" = c(
         "Register Membership Details",
         "Send Outfit Arrival Confirmation",
+        "Member&#10;Arrived",
         "Check Outfit",
         "Receive Signature",
         "Create Purchase Order",
@@ -322,7 +324,7 @@ handling_of_incoming_job_applications <-
       "id" = c(
         "sid-4F0E0157-E720-4389-A0DA-FFD482BBECC4",
         "sid-E2BAC2CC-2174-44DB-B3B0-432F9F39AE01",
-        "sid-DE5E2224-C6AD-4038-95DF-111666175C3F",
+        "sid-B93CB368-C546-4328-A092-221C707A90AA",
         "sid-DE5E2224-C6AD-4038-95DF-111666175C3F"
       ),
       "name" = c(
