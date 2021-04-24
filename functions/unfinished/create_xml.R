@@ -1,6 +1,7 @@
 # ================================= PACKAGES ===================================
 
 # Delete this section when create_xml will be included in a package with imports?
+library("dplyr")
 library("uuid")
 library("xml2")
 
@@ -15,13 +16,28 @@ create_xml <- function(bpmn) {
     startEvent = "startEvent",
     endEvent = "endEvent"
   )
+  plural_of_bpmn_elements <- list(
+    task = "tasks",
+    sequenceFlow = "sequenceFlows",
+    gateway = "gateways",
+    startEvent = "startEvent",
+    endEvent = "endEvent"
+  )
+  
+  dimensions_bpmndi <- list(
+    task = list(height = "80.0", width = "100.0"),
+    gateway = list(height = "50.0", width = "50.0"),
+    startEvent = list(height = "36.0", width = "36.0"),
+    endEvent = list(height = "36.0", width = "36.0")
+  )
   
   bpmn_xml <- xml_new_root("definitions")
   
   xml_set_attrs(
     bpmn_xml,
+    # change order ??? add/remove certain things ???
     c(
-      "id" = UUIDgenerate(),
+      "id" = paste0("sid-", UUIDgenerate()),
       "xmlns:bpmn" = "http://www.omg.org/spec/BPMN/20100524/MODEL",
       "xmlns:bpmndi" = "http://www.omg.org/spec/BPMN/20100524/DI",
       "xmlns:dc" = "http://www.omg.org/spec/DD/20100524/DC",
@@ -35,8 +51,9 @@ create_xml <- function(bpmn) {
   
   xml_name(bpmn_xml) <- "bpmn:definitions"
   
+  # c("bpmn:collaboration", "bpmn:process", "bpmn:BPMNDiagram")
   xml_element_nodes <-
-    c("bpmn:collaboration", "bpmn:process", "bpmn:BPMNDiagram")
+    c("bpmn:process", "bpmndi:BPMNDiagram")
   for (xml_element_node in xml_element_nodes) {
     xml_add_child(bpmn_xml, xml_element_node)
   }
@@ -44,12 +61,18 @@ create_xml <- function(bpmn) {
   children_definitions_node <- xml_children(bpmn_xml)
   
   for (child_definition_node in children_definitions_node) {
-    xml_set_attr(child_definition_node, "id", UUIDgenerate())
+    xml_set_attr(child_definition_node,
+                 "id",
+                 paste0("sid-", UUIDgenerate()))
+    # Sys.sleep(0.001)
   }
   
-  collaboration_node <- children_definitions_node[[1]]
-  process_node <- children_definitions_node[[2]]
-  BPMNDiagram_node <- children_definitions_node[[3]]
+  # collaboration_node <- children_definitions_node[[1]]
+  # process_node <- children_definitions_node[[2]]
+  # BPMNDiagram_node <- children_definitions_node[[3]]
+  
+  process_node <- children_definitions_node[[1]]
+  BPMNDiagram_node <- children_definitions_node[[2]]
   
   # Converts certain attributes from a factor back to character type
   attributes_to_factors <- c("gatewayType", "gatewayDirection")
@@ -79,6 +102,7 @@ create_xml <- function(bpmn) {
       for (individual_element in individual_elements) {
         attribute_names <- names(individual_element)
         for (j in seq_along(individual_element)) {
+          # put name before id (see page 61) ??? ==> switch name and id in create_bpmn ???
           if (attribute_names[[j]] %in% xml_attributes) {
             xml_set_attr(children_process_node[[length(children_process_node)]],
                          attribute_names[[j]],
@@ -87,6 +111,7 @@ create_xml <- function(bpmn) {
             xml_name(children_process_node[[length(children_process_node)]]) <-
               individual_element[[j]]
           } else {
+            # is this correct ???
             xml_add_child(
               children_process_node[[length(children_process_node)]],
               paste("bpmn", attribute_names[[j]], sep = ":"),
@@ -97,6 +122,218 @@ create_xml <- function(bpmn) {
       }
     }
   }
+  
+  find_incoming_outgoing <- function(x) {
+    bpmn[[x]] %>%
+      left_join(bpmn[["sequenceFlows"]], by = c("id" = "targetRef")) %>%
+      select(id, id.y) %>%
+      rename(incoming = id.y) %>%
+      left_join(bpmn[["sequenceFlows"]], by = c("id" = "sourceRef")) %>%
+      select(id, incoming, id.y) %>%
+      rename(outgoing = id.y)
+  }
+  
+  incoming_outgoing_flows <- names(bpmn) %>%
+    map(~ find_incoming_outgoing(.x))
+  
+  names(incoming_outgoing_flows) <- names(plural_of_bpmn_elements)
+  
+  incoming_outgoing_flows[["sequenceFlow"]][["incoming"]] <-
+    bpmn[["sequenceFlows"]][["sourceRef"]]
+  incoming_outgoing_flows[["sequenceFlow"]][["outgoing"]] <-
+    bpmn[["sequenceFlows"]][["targetRef"]]
+  
+  for (element in names(incoming_outgoing_flows)) {
+    element_list <- list()
+    my_range <- 1:nrow(incoming_outgoing_flows[[element]])
+    for (i in my_range) {
+      element_list[[length(element_list) + 1]] <- element
+    }
+    incoming_outgoing_flows[[element]][["element"]] <- element_list
+  }
+  
+  for (child_process_node in children_process_node) {
+    element <- xml_name(child_process_node)
+    # if (element != "sequenceFlow") {
+    if (grepl("Gateway", element, fixed = TRUE)) {
+      element <- "gateway"
+    }
+    incoming_outgoing_flows_element <-
+      incoming_outgoing_flows[[element]][which(incoming_outgoing_flows[[element]] == xml_attr(child_process_node, "id")),]
+    incoming_flows_element <-
+      unique(incoming_outgoing_flows_element[["incoming"]])
+    outgoing_flows_element <-
+      unique(incoming_outgoing_flows_element[["outgoing"]])
+    
+    for (incoming_flow in incoming_flows_element) {
+      if (!is.na(incoming_flow)) {
+        xml_add_child(child_process_node,
+                      paste("bpmn", "incoming", sep = ":"),
+                      incoming_flow)
+      }
+    }
+    for (outgoing_flow in outgoing_flows_element) {
+      if (!is.na(outgoing_flow)) {
+        xml_add_child(child_process_node,
+                      paste("bpmn", "outgoing", sep = ":"),
+                      outgoing_flow)
+      }
+    }
+    # }
+  }
+  
+  incoming_outgoing_flows_df <- bind_rows(incoming_outgoing_flows)
+  
+  BPMNPlane_node <- c("bpmndi:BPMNPlane")
+  xml_add_child(BPMNDiagram_node, BPMNPlane_node)
+  
+  children_BPMNDiagram_node <- xml_children(BPMNDiagram_node)
+  
+  BPMNPlane_node <- children_BPMNDiagram_node[[1]]
+  
+  xml_set_attr(BPMNPlane_node, "bpmnElement", xml_attr(process_node, "id"))
+  xml_set_attr(BPMNPlane_node, "id", paste0("sid-", UUIDgenerate()))
+  
+  output <- compute_coordinates(bpmn$sequenceFlows)
+  
+  children_process_node <- xml_children(process_node)
+  
+  for (child_process_node in children_process_node) {
+    if (xml_name(child_process_node) == "sequenceFlow") {
+      bpmndi_element <- "BPMNEdge"
+    } else {
+      bpmndi_element <- "BPMNShape"
+    }
+    xml_add_child(BPMNPlane_node,
+                  paste("bpmndi", bpmndi_element, sep = ":"))
+    
+    children_BPMNPlane_node <- xml_children(BPMNPlane_node)
+    
+    # use xml_child(x, search = 1, ns = xml_ns(x)) ???
+    child_BPMNPlane_node <-
+      children_BPMNPlane_node[[length(children_BPMNPlane_node)]]
+    
+    xml_set_attr(child_BPMNPlane_node,
+                 "bpmnElement",
+                 xml_attr(child_process_node, "id"))
+    
+    # xml_set_attr(child_BPMNPlane_node,
+    #              "id",
+    #              paste0(xml_attr(child_process_node, "id"), "_gui"))
+    
+    if (xml_name(child_process_node) != "sequenceFlow") {
+      element <- xml_name(child_process_node)
+      if (grepl("Gateway", element, fixed = TRUE)) {
+        element <- "gateway"
+      }
+      
+      xml_add_child(child_BPMNPlane_node,
+                    paste("dc", "Bounds", sep = ":"))
+      xml_add_child(child_BPMNPlane_node,
+                    paste("bpmndi", "BPMNLabel", sep = ":"))
+      
+      child_BPMNShape_node <-
+        xml_children(child_BPMNPlane_node)[[1]]
+      
+      xml_set_attr(child_BPMNShape_node,
+                   "height",
+                   dimensions_bpmndi[[element]][["height"]])
+      xml_set_attr(child_BPMNShape_node,
+                   "width",
+                   dimensions_bpmndi[[element]][["width"]])
+      xml_set_attr(child_BPMNShape_node,
+                   "x",
+                   output[["x"]][which(output[["id"]] == xml_attr(child_process_node, "id"))] - as.numeric(dimensions_bpmndi[[element]][["width"]]) / 2)
+      xml_set_attr(child_BPMNShape_node,
+                   "y",
+                   output[["y"]][which(output[["id"]] == xml_attr(child_process_node, "id"))] - as.numeric(dimensions_bpmndi[[element]][["height"]]) / 2)
+    }
+    
+    if (xml_name(child_process_node) == "sequenceFlow") {
+      xml_add_child(child_BPMNPlane_node,
+                    paste("di", "waypoint", sep = ":"))
+      xml_add_child(child_BPMNPlane_node,
+                    paste("di", "waypoint", sep = ":"))
+      
+      children_BPMNEdge_node <- xml_children(child_BPMNPlane_node)
+      
+      id_sequenceFlow <-
+        incoming_outgoing_flows_df[["id"]][which(
+          incoming_outgoing_flows_df[["id"]] == xml_attr(child_BPMNPlane_node, "bpmnElement")
+        )]
+      # print(paste("id sequenceFlow:", id_sequenceFlow))
+      
+      id_incoming <-
+        incoming_outgoing_flows_df[["incoming"]][which(incoming_outgoing_flows_df[["id"]] == id_sequenceFlow)]
+      # print(paste("id incoming:", id_incoming))
+      
+      id_outgoing <-
+        incoming_outgoing_flows_df[["outgoing"]][which(incoming_outgoing_flows_df[["id"]] == id_sequenceFlow)]
+      # print(paste("id outgoing:", id_outgoing))
+      
+      element_incoming <-
+        unique(incoming_outgoing_flows_df[["element"]][which(incoming_outgoing_flows_df[["id"]] == id_incoming)])[[1]]
+      # print(paste("element incoming:", element_incoming))
+      
+      element_outgoing <-
+        unique(incoming_outgoing_flows_df[["element"]][which(incoming_outgoing_flows_df[["id"]] == id_outgoing)])[[1]]
+      # print(paste("element outgoing:", element_outgoing))
+      
+      count <- 0
+      for (child_BPMNEdge_node in children_BPMNEdge_node) {
+        if (count == 0) {
+          if (element_incoming == "gateway") {
+            xml_set_attr(child_BPMNEdge_node,
+                         "x",
+                         output[["x"]][which(output[["id"]] == id_incoming)])
+            xml_set_attr(child_BPMNEdge_node,
+                         "y",
+                         output[["y"]][which(output[["id"]] == id_incoming)])
+          } else {
+            xml_set_attr(child_BPMNEdge_node,
+                         "x",
+                         output[["x"]][which(output[["id"]] == id_incoming)] + as.numeric(dimensions_bpmndi[[element_incoming]][["width"]]) / 2)
+            xml_set_attr(child_BPMNEdge_node,
+                         "y",
+                         output[["y"]][which(output[["id"]] == id_incoming)])
+          }
+          count <- count + 1
+        } else {
+          if (element_incoming == "gateway") {
+            xml_set_attr(child_BPMNEdge_node,
+                         "x",
+                         output[["x"]][which(output[["id"]] == id_incoming)])
+            xml_set_attr(child_BPMNEdge_node,
+                         "y",
+                         output[["y"]][which(output[["id"]] == id_outgoing)])
+            
+            xml_add_child(child_BPMNPlane_node,
+                          paste("di", "waypoint", sep = ":"))
+            
+            children_BPMNEdge_node <-
+              xml_children(child_BPMNPlane_node)
+            
+            xml_set_attr(
+              children_BPMNEdge_node[[3]],
+              "x",
+              output[["x"]][which(output[["id"]] == id_outgoing)] - as.numeric(dimensions_bpmndi[[element_outgoing]][["width"]]) / 2
+            )
+            xml_set_attr(children_BPMNEdge_node[[3]],
+                         "y",
+                         output[["y"]][which(output[["id"]] == id_outgoing)])
+          } else {
+            xml_set_attr(child_BPMNEdge_node,
+                         "x",
+                         output[["x"]][which(output[["id"]] == id_outgoing)] - as.numeric(dimensions_bpmndi[[element_outgoing]][["width"]]) / 2)
+            xml_set_attr(child_BPMNEdge_node,
+                         "y",
+                         output[["y"]][which(output[["id"]] == id_outgoing)])
+          }
+        }
+      }
+    }
+  }
+  
   return(bpmn_xml)
 }
 
@@ -109,6 +346,7 @@ golf_club_subscription <-
       "id" = c(
         "sid-E34BD051-438B-4804-9597-73410072D3A6",
         "sid-5D5B1DDF-B775-427D-9426-2870D4B03071",
+        "sid-F3631DA4-BC36-4CC3-A471-760EB1ED1B31",
         "sid-7E6BDDB4-802C-4DF2-A5CC-74486A3A837A",
         "sid-E0EB68AD-A40C-4273-BBA4-8122245B772A",
         "sid-661F8D79-1358-4DB0-9F61-7D74B2D12347",
@@ -119,6 +357,7 @@ golf_club_subscription <-
       "name" = c(
         "Register Membership Details",
         "Send Outfit Arrival Confirmation",
+        "Member&#10;Arrived",
         "Check Outfit",
         "Receive Signature",
         "Create Purchase Order",
@@ -208,7 +447,7 @@ handling_of_incoming_job_applications <-
       "id" = c(
         "sid-4F0E0157-E720-4389-A0DA-FFD482BBECC4",
         "sid-E2BAC2CC-2174-44DB-B3B0-432F9F39AE01",
-        "sid-DE5E2224-C6AD-4038-95DF-111666175C3F",
+        "sid-B93CB368-C546-4328-A092-221C707A90AA",
         "sid-DE5E2224-C6AD-4038-95DF-111666175C3F"
       ),
       "name" = c(
@@ -423,3 +662,38 @@ training_and_certification_propose_training <-
 training_and_certification_propose_training_xml <-
   create_xml(training_and_certification_propose_training)
 print(training_and_certification_propose_training_xml)
+
+# ==============================================================================
+
+write_bpmn(
+  golf_club_subscription_xml,
+  file.path(
+    getwd(),
+    "test_outputs",
+    "test_create_xml",
+    "golf_club_subscription_xml.bpmn"
+  ),
+  options = c("format", "as_xml")
+)
+
+write_bpmn(
+  handling_of_incoming_job_applications_xml,
+  file.path(
+    getwd(),
+    "test_outputs",
+    "test_create_xml",
+    "handling_of_incoming_job_applications_xml.bpmn"
+  ),
+  options = c("format", "as_xml")
+)
+
+write_bpmn(
+  training_and_certification_propose_training_xml,
+  file.path(
+    getwd(),
+    "test_outputs",
+    "test_create_xml",
+    "training_and_certification_propose_training_xml.bpmn"
+  ),
+  options = c("format", "as_xml")
+)

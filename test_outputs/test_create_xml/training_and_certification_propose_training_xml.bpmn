@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="sid-aa19c041-2a64-4873-8733-c6e4c7a48208" targetNamespace="http://bupar.net" exporter="bupaR-suite bpmn, https://github.com/bupaverse/bpmn" exporterVersion="0.0.1">
+  <bpmn:process id="sid-f58c3892-54f9-4777-8bdd-8412f3f5aa1b">
+    <bpmn:task id="sid-CA4655A9-1103-4C90-B7A3-FDC05B21A4DF" name="Provide Training Details">
+      <bpmn:incoming>sid-40604AA1-4A4D-4971-8E30-60C5C370F88F</bpmn:incoming>
+      <bpmn:outgoing>sid-67A02DD8-8C8D-4966-89A5-E3724CBD6FC4</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="sid-63F04EDD-4B9A-4F5D-B039-9E7DB15124EA" name="Review Proposed Training">
+      <bpmn:incoming>sid-67A02DD8-8C8D-4966-89A5-E3724CBD6FC4</bpmn:incoming>
+      <bpmn:outgoing>sid-4E0795AA-34EF-4B3C-BFB7-A730A139D751</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="sid-519D3C08-C80F-41D5-86BF-534454059264" name="Complete Training Details">
+      <bpmn:incoming>sid-56FFCF34-DA5E-424D-9C6A-FB1E84ACB51C</bpmn:incoming>
+      <bpmn:outgoing>sid-D844A582-FB49-40A3-86D8-87A7E464ADA6</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="sid-A4486FE4-898A-4ACE-8E28-4EDB25D9CA80" name="Analyse Training">
+      <bpmn:incoming>sid-D844A582-FB49-40A3-86D8-87A7E464ADA6</bpmn:incoming>
+      <bpmn:outgoing>sid-D9783CE0-6739-40B6-83AA-C4FD78B2D31F</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="sid-40604AA1-4A4D-4971-8E30-60C5C370F88F" name="" sourceRef="sid-5138A3E5-D13E-4096-808F-A733CB53A25E" targetRef="sid-CA4655A9-1103-4C90-B7A3-FDC05B21A4DF">
+      <bpmn:incoming>sid-5138A3E5-D13E-4096-808F-A733CB53A25E</bpmn:incoming>
+      <bpmn:outgoing>sid-CA4655A9-1103-4C90-B7A3-FDC05B21A4DF</bpmn:outgoing>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="sid-4E0795AA-34EF-4B3C-BFB7-A730A139D751" name="" sourceRef="sid-63F04EDD-4B9A-4F5D-B039-9E7DB15124EA" targetRef="sid-256C86CE-024E-4FA9-8F9C-CB79CF9B83B9">
+      <bpmn:incoming>sid-63F04EDD-4B9A-4F5D-B039-9E7DB15124EA</bpmn:incoming>
+      <bpmn:outgoing>sid-256C86CE-024E-4FA9-8F9C-CB79CF9B83B9</bpmn:outgoing>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="sid-905EE1D5-43C2-4A7F-8BF9-EDF9BCDA6937" name="No" sourceRef="sid-256C86CE-024E-4FA9-8F9C-CB79CF9B83B9" targetRef="sid-5C45E10B-0B75-4773-B3C5-F4229C335B2C">
+      <bpmn:incoming>sid-256C86CE-024E-4FA9-8F9C-CB79CF9B83B9</bpmn:incoming>
+      <bpmn:outgoing>sid-5C45E10B-0B75-4773-B3C5-F4229C335B2C</bpmn:outgoing>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="sid-56FFCF34-DA5E-424D-9C6A-FB1E84ACB51C" name="Yes" sourceRef="sid-256C86CE-024E-4FA9-8F9C-CB79CF9B83B9" targetRef="sid-519D3C08-C80F-41D5-86BF-534454059264">
+      <bpmn:incoming>sid-256C86CE-024E-4FA9-8F9C-CB79CF9B83B9</bpmn:incoming>
+      <bpmn:outgoing>sid-519D3C08-C80F-41D5-86BF-534454059264</bpmn:outgoing>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="sid-D844A582-FB49-40A3-86D8-87A7E464ADA6" name="" sourceRef="sid-519D3C08-C80F-41D5-86BF-534454059264" targetRef="sid-A4486FE4-898A-4ACE-8E28-4EDB25D9CA80">
+      <bpmn:incoming>sid-519D3C08-C80F-41D5-86BF-534454059264</bpmn:incoming>
+      <bpmn:outgoing>sid-A4486FE4-898A-4ACE-8E28-4EDB25D9CA80</bpmn:outgoing>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="sid-D9783CE0-6739-40B6-83AA-C4FD78B2D31F" name="" sourceRef="sid-A4486FE4-898A-4ACE-8E28-4EDB25D9CA80" targetRef="sid-193B76B3-69B8-4651-93B4-9A232F583DF8">
+      <bpmn:incoming>sid-A4486FE4-898A-4ACE-8E28-4EDB25D9CA80</bpmn:incoming>
+      <bpmn:outgoing>sid-193B76B3-69B8-4651-93B4-9A232F583DF8</bpmn:outgoing>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="sid-68052AB2-FCBB-4E6A-98DC-A2C247A299CA" name="No" sourceRef="sid-193B76B3-69B8-4651-93B4-9A232F583DF8" targetRef="sid-2CB5E4EF-7650-45BA-B1EA-074F233E126A">
+      <bpmn:incoming>sid-193B76B3-69B8-4651-93B4-9A232F583DF8</bpmn:incoming>
+      <bpmn:outgoing>sid-2CB5E4EF-7650-45BA-B1EA-074F233E126A</bpmn:outgoing>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="sid-97590648-C5B4-4A5B-B22A-FCFEF041E022" name="Yes" sourceRef="sid-193B76B3-69B8-4651-93B4-9A232F583DF8" targetRef="sid-6866567E-B23A-4D65-B06A-BC449EABBF78">
+      <bpmn:incoming>sid-193B76B3-69B8-4651-93B4-9A232F583DF8</bpmn:incoming>
+      <bpmn:outgoing>sid-6866567E-B23A-4D65-B06A-BC449EABBF78</bpmn:outgoing>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="sid-67A02DD8-8C8D-4966-89A5-E3724CBD6FC4" name="" sourceRef="sid-CA4655A9-1103-4C90-B7A3-FDC05B21A4DF" targetRef="sid-63F04EDD-4B9A-4F5D-B039-9E7DB15124EA">
+      <bpmn:incoming>sid-CA4655A9-1103-4C90-B7A3-FDC05B21A4DF</bpmn:incoming>
+      <bpmn:outgoing>sid-63F04EDD-4B9A-4F5D-B039-9E7DB15124EA</bpmn:outgoing>
+    </bpmn:sequenceFlow>
+    <bpmn:exclusiveGateway id="sid-256C86CE-024E-4FA9-8F9C-CB79CF9B83B9" name="Training Approved?" gatewayDirection="Diverging">
+      <bpmn:incoming>sid-4E0795AA-34EF-4B3C-BFB7-A730A139D751</bpmn:incoming>
+      <bpmn:outgoing>sid-905EE1D5-43C2-4A7F-8BF9-EDF9BCDA6937</bpmn:outgoing>
+      <bpmn:outgoing>sid-56FFCF34-DA5E-424D-9C6A-FB1E84ACB51C</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:exclusiveGateway id="sid-193B76B3-69B8-4651-93B4-9A232F583DF8" name="Acceptance criteria&amp;#10;met?" gatewayDirection="Diverging">
+      <bpmn:incoming>sid-D9783CE0-6739-40B6-83AA-C4FD78B2D31F</bpmn:incoming>
+      <bpmn:outgoing>sid-68052AB2-FCBB-4E6A-98DC-A2C247A299CA</bpmn:outgoing>
+      <bpmn:outgoing>sid-97590648-C5B4-4A5B-B22A-FCFEF041E022</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:startEvent id="sid-5138A3E5-D13E-4096-808F-A733CB53A25E" name="New Training &amp;#10;Identified">
+      <bpmn:outgoing>sid-40604AA1-4A4D-4971-8E30-60C5C370F88F</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:endEvent id="sid-5C45E10B-0B75-4773-B3C5-F4229C335B2C" name="Training Rejected">
+      <bpmn:incoming>sid-905EE1D5-43C2-4A7F-8BF9-EDF9BCDA6937</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="sid-2CB5E4EF-7650-45BA-B1EA-074F233E126A" name="Training Fails &amp;#10;Acceptance Criteria">
+      <bpmn:incoming>sid-68052AB2-FCBB-4E6A-98DC-A2C247A299CA</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="sid-6866567E-B23A-4D65-B06A-BC449EABBF78" name="Training Accepted">
+      <bpmn:incoming>sid-97590648-C5B4-4A5B-B22A-FCFEF041E022</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="sid-7b7d07d1-dce1-4529-9a81-680ed2b77c91">
+    <bpmndi:BPMNPlane bpmnElement="sid-f58c3892-54f9-4777-8bdd-8412f3f5aa1b" id="sid-eb89debc-3a92-464d-b70a-868461ae6f15">
+      <bpmndi:BPMNShape bpmnElement="sid-CA4655A9-1103-4C90-B7A3-FDC05B21A4DF">
+        <dc:Bounds height="80.0" width="100.0" x="130" y="185"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="sid-63F04EDD-4B9A-4F5D-B039-9E7DB15124EA">
+        <dc:Bounds height="80.0" width="100.0" x="274" y="185"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="sid-519D3C08-C80F-41D5-86BF-534454059264">
+        <dc:Bounds height="80.0" width="100.0" x="562" y="320"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="sid-A4486FE4-898A-4ACE-8E28-4EDB25D9CA80">
+        <dc:Bounds height="80.0" width="100.0" x="706" y="320"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="sid-40604AA1-4A4D-4971-8E30-60C5C370F88F">
+        <di:waypoint x="54" y="225"/>
+        <di:waypoint x="130" y="225"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="sid-4E0795AA-34EF-4B3C-BFB7-A730A139D751">
+        <di:waypoint x="374" y="225"/>
+        <di:waypoint x="443" y="225"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="sid-905EE1D5-43C2-4A7F-8BF9-EDF9BCDA6937">
+        <di:waypoint x="468" y="225"/>
+        <di:waypoint x="468" y="90"/>
+        <di:waypoint x="594" y="90"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="sid-56FFCF34-DA5E-424D-9C6A-FB1E84ACB51C">
+        <di:waypoint x="468" y="225"/>
+        <di:waypoint x="468" y="360"/>
+        <di:waypoint x="562" y="360"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="sid-D844A582-FB49-40A3-86D8-87A7E464ADA6">
+        <di:waypoint x="662" y="360"/>
+        <di:waypoint x="706" y="360"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="sid-D9783CE0-6739-40B6-83AA-C4FD78B2D31F">
+        <di:waypoint x="806" y="360"/>
+        <di:waypoint x="875" y="360"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="sid-68052AB2-FCBB-4E6A-98DC-A2C247A299CA">
+        <di:waypoint x="900" y="360"/>
+        <di:waypoint x="900" y="495"/>
+        <di:waypoint x="1026" y="495"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="sid-97590648-C5B4-4A5B-B22A-FCFEF041E022">
+        <di:waypoint x="900" y="360"/>
+        <di:waypoint x="900" y="225"/>
+        <di:waypoint x="1026" y="225"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="sid-67A02DD8-8C8D-4966-89A5-E3724CBD6FC4">
+        <di:waypoint x="230" y="225"/>
+        <di:waypoint x="274" y="225"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape bpmnElement="sid-256C86CE-024E-4FA9-8F9C-CB79CF9B83B9">
+        <dc:Bounds height="50.0" width="50.0" x="443" y="200"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="sid-193B76B3-69B8-4651-93B4-9A232F583DF8">
+        <dc:Bounds height="50.0" width="50.0" x="875" y="335"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="sid-5138A3E5-D13E-4096-808F-A733CB53A25E">
+        <dc:Bounds height="36.0" width="36.0" x="18" y="207"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="sid-5C45E10B-0B75-4773-B3C5-F4229C335B2C">
+        <dc:Bounds height="36.0" width="36.0" x="594" y="72"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="sid-2CB5E4EF-7650-45BA-B1EA-074F233E126A">
+        <dc:Bounds height="36.0" width="36.0" x="1026" y="477"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="sid-6866567E-B23A-4D65-B06A-BC449EABBF78">
+        <dc:Bounds height="36.0" width="36.0" x="1026" y="207"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
