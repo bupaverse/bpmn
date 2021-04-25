@@ -225,6 +225,10 @@ create_xml <- function(bpmn) {
       element <- xml_name(child_process_node)
       if (grepl("Gateway", element, fixed = TRUE)) {
         element <- "gateway"
+        
+        xml_set_attr(child_BPMNPlane_node,
+                     "isMarkerVisible",
+                     "true")
       }
       
       xml_add_child(child_BPMNPlane_node,
