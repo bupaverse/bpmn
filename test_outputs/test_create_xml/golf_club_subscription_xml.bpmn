@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="sid-c2710abd-7b0f-456b-813c-54481af15799" targetNamespace="http://bupar.net" exporter="bupaR-suite bpmn, https://github.com/bupaverse/bpmn" exporterVersion="0.0.1">
-  <bpmn:process id="sid-85695a25-2c4a-4d44-9418-a64b4ae56a8e">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="sid-40f358f3-2341-4944-a618-f9a8eba694df" targetNamespace="http://bupar.net" exporter="bupaR-suite bpmn, https://github.com/bupaverse/bpmn" exporterVersion="0.0.1">
+  <bpmn:process id="sid-967e0fee-c1a8-433d-8b9e-38e5dc38d811">
     <bpmn:task id="sid-E34BD051-438B-4804-9597-73410072D3A6" name="Register Membership Details">
       <bpmn:incoming>sid-C75AC69E-AFD7-48D3-8DA8-00785F5C4D3C</bpmn:incoming>
       <bpmn:outgoing>sid-20F3BC1F-DAF3-4D2A-B4E8-DA7A9DE9AE55</bpmn:outgoing>
@@ -100,8 +100,8 @@
       <bpmn:incoming>sid-EF45F19A-F757-4372-B0E7-91F236553C63</bpmn:incoming>
     </bpmn:endEvent>
   </bpmn:process>
-  <bpmndi:BPMNDiagram id="sid-170851ed-b613-45ed-9abb-088638e1389d">
-    <bpmndi:BPMNPlane bpmnElement="sid-85695a25-2c4a-4d44-9418-a64b4ae56a8e" id="sid-b78e8051-88c5-4637-8f83-a66ea363300f">
+  <bpmndi:BPMNDiagram id="sid-1edad5fe-3e85-4de7-8125-fa667500a36a">
+    <bpmndi:BPMNPlane bpmnElement="sid-967e0fee-c1a8-433d-8b9e-38e5dc38d811" id="sid-a2165c05-8a9b-4edf-8780-5186ceea9876">
       <bpmndi:BPMNShape bpmnElement="sid-E34BD051-438B-4804-9597-73410072D3A6">
         <dc:Bounds height="80.0" width="100.0" x="130" y="185"/>
         <bpmndi:BPMNLabel/>
@@ -188,7 +188,7 @@
         <di:waypoint x="1526" y="90"/>
         <di:waypoint x="1602" y="90"/>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape bpmnElement="sid-6E824B39-960C-4754-AE27-DBFB04D77430">
+      <bpmndi:BPMNShape bpmnElement="sid-6E824B39-960C-4754-AE27-DBFB04D77430" isMarkerVisible="true">
         <dc:Bounds height="50.0" width="50.0" x="299" y="200"/>
         <bpmndi:BPMNLabel/>
       </bpmndi:BPMNShape>
