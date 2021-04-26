@@ -49,3 +49,12 @@ training_and_certification_propose_training_bpmn_file <-
     )
   )
 render_bpmn(training_and_certification_propose_training_bpmn_file)
+
+test_diagram_bpmn_file <-
+  read_xml(file.path(
+    getwd(),
+    "test_outputs",
+    "test_create_xml",
+    "test_diagram_xml.bpmn"
+  ))
+render_bpmn(test_diagram_bpmn_file)
