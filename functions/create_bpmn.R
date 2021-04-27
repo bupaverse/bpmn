@@ -2,7 +2,6 @@
 
 # Delete this section when create_bpmn will be included in a package with imports?
 library("assertive")
-library("dplyr")
 library("knitr")
 library("purrr")
 
