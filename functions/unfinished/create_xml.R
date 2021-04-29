@@ -84,7 +84,7 @@ library("xml2")
 
 # ???
 create_xml <- function(bpmn) {
-  # ============================== CHECK
+  # ============================== OK
   
   # Defines every data structure that can be changed
   singular_of_bpmn_elements <- list(
@@ -107,12 +107,13 @@ create_xml <- function(bpmn) {
     startEvent = list(height = "36.0", width = "36.0"),
     endEvent = list(height = "36.0", width = "36.0")
   )
+  elements_empty_allowed <- c("gateways")
   attributes_to_factors <- c("gatewayType", "gatewayDirection")
   xml_attributes <-
     c("id", "name", "sourceRef", "targetRef", "gatewayDirection")
   type_attributes <- c("gatewayType")
   
-  # ============================== CHECK
+  # ============================== OK
   
   # ???
   bpmn_xml <- xml_new_root("definitions")
@@ -137,7 +138,7 @@ create_xml <- function(bpmn) {
   # ???
   xml_name(bpmn_xml) <- "bpmn:definitions"
   
-  # ============================== CHECK
+  # ============================== OK
   
   # Adds ???
   process_node <-
@@ -149,7 +150,7 @@ create_xml <- function(bpmn) {
     .xml.add.and.return.child(bpmn_xml, "bpmndi:BPMNDiagram", 2)
   xml_set_attr(BPMNDiagram_node, "id", paste0("sid-", UUIDgenerate()))
   
-  # ============================== CHECK
+  # ============================== OK
   
   # Converts certain attributes from a factor back to character type
   for (element in names(bpmn)) {
@@ -211,10 +212,21 @@ create_xml <- function(bpmn) {
       rename(outgoing = id.y)
   }
   
-  # ???
-  incoming_outgoing_flows <- names(bpmn) %>%
+  # Checks for empty data.frames
+  retrieve_empty_data_frames <- as_mapper(~ nrow(.x) == 0)
+  bpmn_elements_empty <- bpmn %>%
+    map_lgl(retrieve_empty_data_frames)
+  
+  bpmn_elements <- names(bpmn)
+  bpmn_elements <- bpmn_elements[!bpmn_elements_empty]
+  
+  plural_of_bpmn_elements_without_empty <-
+    plural_of_bpmn_elements[!bpmn_elements_empty]
+  
+  incoming_outgoing_flows <- bpmn_elements %>%
     map(~ find_incoming_outgoing(.x))
-  names(incoming_outgoing_flows) <- names(plural_of_bpmn_elements)
+  names(incoming_outgoing_flows) <-
+    names(plural_of_bpmn_elements_without_empty)
   
   # ???
   incoming_outgoing_flows[["sequenceFlow"]][["incoming"]] <-
@@ -265,7 +277,7 @@ create_xml <- function(bpmn) {
   
   incoming_outgoing_flows_df <- bind_rows(incoming_outgoing_flows)
   
-  # ============================== CHECK
+  # ============================== OK
   
   # Adds BPMNPlane, which is the BPMNDiagram container of BPMNShape and BPMNEdge
   BPMNPlane_node <-
@@ -305,7 +317,7 @@ create_xml <- function(bpmn) {
     #              "id",
     #              paste0(xml_attr(child_process_node, "id"), "_gui"))
     
-    # ============================== CHECK
+    # ============================== OK
     
     # ???
     if (element != "sequenceFlow") {
