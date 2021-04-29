@@ -35,8 +35,6 @@ library("xml2")
 #'   declaration. \sQuote{UTF-8} is the default encoding used.
 #' @param ... Additional arguments passed to methods.
 #'
-#' @return
-#'
 #' @author Alessio Nigro
 #'
 #' @import htmlwidgets
