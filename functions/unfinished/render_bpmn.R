@@ -48,6 +48,7 @@ library("xml2")
 #' \dontrun{
 #' bpmn_file_path <-
 #'   file.path(getwd(), "example_models", "Golf Club Subscription.bpmn")
+#'   
 #' render_bpmn(bpmn_file_path)
 #' }
 render_bpmn <-
