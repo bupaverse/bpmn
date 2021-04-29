@@ -45,10 +45,10 @@ library("xml2")
 #' @export
 #'
 #' @examples
-#' dontrun{
-#'   bpmn_file_path <-
-#'     file.path(getwd(), "example_models", "Golf Club Subscription.bpmn")
-#'   render_bpmn(bpmn_file_path)
+#' \dontrun{
+#' bpmn_file_path <-
+#'   file.path(getwd(), "example_models", "Golf Club Subscription.bpmn")
+#' render_bpmn(bpmn_file_path)
 #' }
 render_bpmn <-
   function(bpmn_model,
