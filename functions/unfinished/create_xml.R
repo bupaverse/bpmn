@@ -82,7 +82,56 @@ library("xml2")
 
 # ============================== MAIN FUNCTION =================================
 
-# ???
+#' Create XML document from BPMN object.
+#'
+#' This creates an XML document based on a BPMN object.
+#'
+#' @param bpmn A BPMN object as a list of data.frames.
+#'
+#' @return
+#'
+#' @author Alessio Nigro
+#'
+#' @import DiagrammeR
+#' @import DiagrammeRsvg
+#' @import dplyr
+#' @import rvest
+#' @import tidyverse
+#' @import uuid
+#' @import xml2
+#'
+#' @export
+#'
+#' @examples
+#' bpmn_instance <-
+#'   create_bpmn(
+#'     data.frame(
+#'       "id" = "id_tsk_1",
+#'       "name" = "task_1",
+#'       stringsAsFactors = FALSE
+#'     ),
+#'     data.frame(
+#'       "id" = c("id_sf_1", "id_sf_2"),
+#'       "name" = c("", ""),
+#'       "sourceRef" = c("id_se_1", "id_tsk_1"),
+#'       "targetRef" = c("id_tsk_1", "id_ee_1"),
+#'       stringsAsFactors = FALSE
+#'     ),
+#'     data.frame(),
+#'     data.frame(
+#'       "id" = "id_se_1",
+#'       "name" = "start_event_1",
+#'       stringsAsFactors = FALSE
+#'     ),
+#'     data.frame(
+#'       "id" = "id_ee_1",
+#'       "name" = "end_event_1",
+#'       stringsAsFactors = FALSE
+#'     )
+#'   )
+#'
+#' bpmn_instance_xml <- create_xml(bpmn_instance)
+#' print(bpmn_instance_xml)
 create_xml <- function(bpmn) {
   # ============================== OK
   
