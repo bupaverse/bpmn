@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="sid-b926530c-1793-4e23-b416-df5bb5965280" targetNamespace="http://bupar.net" exporter="bupaR-suite bpmn, https://github.com/bupaverse/bpmn" exporterVersion="0.0.1">
-  <bpmn:process id="sid-5c865feb-d02f-4d7d-9767-c1ca23b80c18">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="sid-551cbbbf-c673-4636-85b3-1e8deee56e37" targetNamespace="http://bupar.net" exporter="bupaR-suite bpmn, https://github.com/bupaverse/bpmn" exporterVersion="0.0.1">
+  <bpmn:process id="sid-06a2eddd-5614-4df0-825d-694141915ed7">
     <bpmn:task id="sid-E34BD051-438B-4804-9597-73410072D3A6" name="Register Membership Details">
       <bpmn:incoming>sid-C75AC69E-AFD7-48D3-8DA8-00785F5C4D3C</bpmn:incoming>
       <bpmn:outgoing>sid-20F3BC1F-DAF3-4D2A-B4E8-DA7A9DE9AE55</bpmn:outgoing>
@@ -64,8 +64,8 @@
       <bpmn:incoming>sid-EF45F19A-F757-4372-B0E7-91F236553C63</bpmn:incoming>
     </bpmn:endEvent>
   </bpmn:process>
-  <bpmndi:BPMNDiagram id="sid-3dce83c5-61c4-4605-9f31-9f58cadfcb36">
-    <bpmndi:BPMNPlane bpmnElement="sid-5c865feb-d02f-4d7d-9767-c1ca23b80c18" id="sid-e55d3b57-ee2b-40e2-8a50-a0587c90eee7">
+  <bpmndi:BPMNDiagram id="sid-4693c302-a364-423d-8e1f-e4c406f90be3">
+    <bpmndi:BPMNPlane bpmnElement="sid-06a2eddd-5614-4df0-825d-694141915ed7" id="sid-32a07ca5-4d4c-42f2-b249-1e543c559dbe">
       <bpmndi:BPMNShape bpmnElement="sid-E34BD051-438B-4804-9597-73410072D3A6">
         <dc:Bounds height="80.0" width="100.0" x="130" y="185"/>
         <bpmndi:BPMNLabel/>
