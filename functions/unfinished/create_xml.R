@@ -87,8 +87,9 @@ library("xml2")
 #' This creates an XML document based on a BPMN object.
 #'
 #' @param bpmn A BPMN object as a list of data.frames.
+#' @param ... Additional arguments passed to methods.
 #'
-#' @return
+#' @return An XML document.
 #'
 #' @author Alessio Nigro
 #'
@@ -132,7 +133,7 @@ library("xml2")
 #'
 #' bpmn_instance_xml <- create_xml(bpmn_instance)
 #' print(bpmn_instance_xml)
-create_xml <- function(bpmn) {
+create_xml <- function(bpmn, ...) {
   # ============================== OK
   
   # Defines every data structure that can be changed
