@@ -11,7 +11,7 @@ library("xml2")
 
 # ============================= HELPER FUNCTIONS ===============================
 
-# ???
+# Creates "defitions" node
 .xml.create.definitions.node <- function() {
   # Creates new XML document and assigns root node "definitions" in one step
   bpmn_xml <- xml_new_root("definitions")
@@ -27,7 +27,7 @@ library("xml2")
       "xmlns:di" = "http://www.omg.org/spec/DD/20100524/DI",
       "xmlns:xsi" = "http://www.w3.org/2001/XMLSchema-instance",
       "targetNamespace" = "http://bupar.net",
-      "exporter" = "bupaR-suite bpmn, https://github.com/bupaverse/bpmn",
+      "exporter" = "bupaR-suite bpmnR, https://github.com/bupaverse/bpmnR",
       "exporterVersion" = "0.0.1"
     )
   )
@@ -38,141 +38,83 @@ library("xml2")
   return(bpmn_xml)
 }
 
-# ???
-.xml.create.process.node <-
-  function(bpmn_xml,
-           bpmn,
-           singular_of_bpmn_elements,
-           plural_of_bpmn_elements,
-           xml_attributes,
-           type_attributes) {
-    # Adds "process" node as a child from "definitions" node
-    process_node <-
-      .xml.add.and.return.child(bpmn_xml, "bpmn:process")
-    xml_set_attr(process_node, "id", paste0("sid-", UUIDgenerate()))
-    
-    # ???
-    .xml.create.bpmn.elements(
-      process_node,
-      bpmn,
-      singular_of_bpmn_elements,
-      plural_of_bpmn_elements,
-      xml_attributes,
-      type_attributes
-    )
-    
-    return(process_node)
+# Adds child to XML node and returns this child
+.xml.add.and.return.child <-
+  function(parent, child_to_add) {
+    xml_add_child(parent, child_to_add)
+    xml_child(parent, search = length(xml_children(parent)))
   }
 
-# ???
-.xml.create.bpmn.elements <- function(process_node,
-                                      bpmn,
-                                      singular_of_bpmn_elements,
-                                      plural_of_bpmn_elements,
-                                      xml_attributes,
-                                      type_attributes) {
-  # Adds BPMN elements as children from "process" node
-  for (bpmn_element in names(bpmn)) {
-    transposed_bpmn_element <- transpose(bpmn[[bpmn_element]])
-    for (i in seq_along(transposed_bpmn_element)) {
-      individual_bpmn_elements <- list(transposed_bpmn_element[[i]])
-      names(individual_bpmn_elements) <-
-        paste("bpmn", singular_of_bpmn_elements[[bpmn_element]], sep = ":")
-      
-      # Adds BPMN element node as a child from "process" node
-      bpmn_element_child_process_node <-
-        .xml.add.and.return.child(process_node, names(individual_bpmn_elements))
-      
-      # ???
-      .xml.create.bpmn.element.children(
-        bpmn_element_child_process_node,
-        individual_bpmn_elements,
-        xml_attributes,
-        type_attributes
-      )
-    }
-  }
-  
-  # ???
-  .xml.create.incoming.outgoing.sequenceFlows(process_node, bpmn, plural_of_bpmn_elements)
-}
-
-# ???
-.xml.create.bpmn.element.children <-
-  function(bpmn_element_child_process_node,
-           individual_bpmn_elements,
+# Sets attributes to, changes name of and adds possible children to the BPMN element node
+.xml.modifies.bpmn.element.node <-
+  function(bpmn_element_node,
+           individual_bpmn_element,
            xml_attributes,
            type_attributes) {
-    # Adds attributes and ??? to the BPMN element node ???
-    for (individual_bpmn_element in individual_bpmn_elements) {
-      attribute_names <- names(individual_bpmn_element)
-      for (j in seq_along(individual_bpmn_element)) {
+    for (attributes in individual_bpmn_element) {
+      attribute_names <- names(attributes)
+      for (j in seq_along(attributes)) {
         if (attribute_names[[j]] %in% xml_attributes) {
-          # ???
-          xml_set_attr(
-            bpmn_element_child_process_node,
-            attribute_names[[j]],
-            individual_bpmn_element[[j]]
-          )
+          # Sets attribute to the BPMN element node
+          xml_set_attr(bpmn_element_node,
+                       attribute_names[[j]],
+                       attributes[[j]])
         } else if (attribute_names[[j]] %in% type_attributes) {
-          # ???
-          xml_name(bpmn_element_child_process_node) <-
-            individual_bpmn_element[[j]]
+          # Changes name of the BPMN element node
+          xml_name(bpmn_element_node) <-
+            attributes[[j]]
         } else {
-          # ???
-          xml_add_child(
-            bpmn_element_child_process_node,
-            paste("bpmn", attribute_names[[j]], sep = ":"),
-            individual_bpmn_element[[j]]
-          )
+          # Adds child to the BPMN element node
+          xml_add_child(bpmn_element_node,
+                        paste("bpmn", attribute_names[[j]], sep = ":"),
+                        attributes[[j]])
         }
       }
     }
   }
 
-# ???
-.find.incoming.outgoing.sequenceFlows <- function(x, bpmn) {
-  bpmn[[x]] %>%
-    left_join(bpmn[["sequenceFlows"]], by = c("id" = "targetRef")) %>%
-    select(id, id.y) %>%
-    rename(incoming = id.y) %>%
-    left_join(bpmn[["sequenceFlows"]], by = c("id" = "sourceRef")) %>%
-    select(id, incoming, id.y) %>%
-    rename(outgoing = id.y)
-}
+# Finds incoming and outgoing sequence flows for every BPMN element
+.find.incoming.outgoing.sequenceFlows <-
+  function(bpmn, bpmn_element) {
+    bpmn[[bpmn_element]] %>%
+      left_join(bpmn[["sequenceFlows"]], by = c("id" = "targetRef")) %>%
+      select(id, id.y) %>%
+      rename(incoming = id.y) %>%
+      left_join(bpmn[["sequenceFlows"]], by = c("id" = "sourceRef")) %>%
+      select(id, incoming, id.y) %>%
+      rename(outgoing = id.y)
+  }
 
+# Retrieves incoming and outgoing elements for every BPMN element node
 .retrieve.incoming.outgoing.elements <-
   function(bpmn, plural_of_bpmn_elements) {
-    # Checks for empty data.frames
+    # Finds every non-empty BPMN element
     retrieve_empty_data_frames <- as_mapper(~ nrow(.x) == 0)
     bpmn_elements_empty <- bpmn %>%
       map_lgl(retrieve_empty_data_frames)
-    
-    # ???
     bpmn_elements <- names(bpmn)
     bpmn_elements <- bpmn_elements[!bpmn_elements_empty]
     
-    # ???
-    plural_of_bpmn_elements_without_empty <-
+    # Retrieves plural of every non-empty BPMN element
+    plural_of_bpmn_elements_non_empty <-
       plural_of_bpmn_elements[!bpmn_elements_empty]
     
-    # ???
+    # Finds incoming and outgoing sequence flows for every non-empty BPMN element
     incoming_outgoing_elements <- bpmn_elements %>%
-      map(~ .find.incoming.outgoing.sequenceFlows(.x, bpmn))
+      map(~ .find.incoming.outgoing.sequenceFlows(bpmn, .x))
     names(incoming_outgoing_elements) <-
-      names(plural_of_bpmn_elements_without_empty)
+      names(plural_of_bpmn_elements_non_empty)
     
-    # ???
+    # Retrieves incoming and outgoing BPMN elements for every sequence flow
     incoming_outgoing_elements[["sequenceFlow"]][["incoming"]] <-
       bpmn[["sequenceFlows"]][["sourceRef"]]
     incoming_outgoing_elements[["sequenceFlow"]][["outgoing"]] <-
       bpmn[["sequenceFlows"]][["targetRef"]]
     
-    # ???
+    # Adds name of BPMN element to every row of the data.frame
     for (element in names(incoming_outgoing_elements)) {
       element_list <- list()
-      my_range <- 1:nrow(incoming_outgoing_elements[[element]])
-      for (i in my_range) {
+      for (i in 1:nrow(incoming_outgoing_elements[[element]])) {
         element_list[[length(element_list) + 1]] <- element
       }
       incoming_outgoing_elements[[element]][["element"]] <-
@@ -182,49 +124,109 @@ library("xml2")
     return(incoming_outgoing_elements)
   }
 
-# ???
+# Creates incoming and outgoing sequence flows for every BPMN element node
 .xml.create.incoming.outgoing.sequenceFlows <-
-  function(process_node,
-           bpmn,
+  function(bpmn,
+           process_node,
            plural_of_bpmn_elements) {
-    # ???
+    # Retrieves incoming and outgoing elements for every BPMN element node
     incoming_outgoing_elements <-
       .retrieve.incoming.outgoing.elements(bpmn, plural_of_bpmn_elements)
     
-    # ???
-    children_process_node <- xml_children(process_node)
-    for (child_process_node in children_process_node) {
-      element <- xml_name(child_process_node)
+    # Adds incoming and outgoing sequence flows for every BPMN element node
+    bpmn_element_nodes <- xml_children(process_node)
+    for (bpmn_element_node in bpmn_element_nodes) {
+      element <- xml_name(bpmn_element_node)
       if (grepl("Gateway", element, fixed = TRUE)) {
         element <- "gateway"
       }
-      # ???
-      incoming_outgoing_elements_element <-
-        incoming_outgoing_elements[[element]][which(incoming_outgoing_elements[[element]] == xml_attr(child_process_node, "id")),]
-      incoming_flows_element <-
-        unique(incoming_outgoing_elements_element[["incoming"]])
-      outgoing_flows_element <-
-        unique(incoming_outgoing_elements_element[["outgoing"]])
       
-      # ???
+      # Splits all incoming and outgoing BPMN elements into two groups
+      incoming_outgoing_elements_per_individual_bpmn_element <-
+        incoming_outgoing_elements[[element]][which(incoming_outgoing_elements[[element]] == xml_attr(bpmn_element_node, "id")),]
+      incoming_elements <-
+        unique(incoming_outgoing_elements_per_individual_bpmn_element[["incoming"]])
+      outgoing_elements <-
+        unique(incoming_outgoing_elements_per_individual_bpmn_element[["outgoing"]])
+      
+      # Adds incoming and outgoing sequence flows for the BPMN element node
       if (element != "sequenceFlow") {
-        for (incoming_flow in incoming_flows_element) {
-          if (!is.na(incoming_flow)) {
-            xml_add_child(child_process_node,
+        for (incoming_element in incoming_elements) {
+          if (!is.na(incoming_element)) {
+            xml_add_child(bpmn_element_node,
                           "bpmn:incoming",
-                          incoming_flow)
+                          incoming_element)
           }
         }
-        for (outgoing_flow in outgoing_flows_element) {
-          if (!is.na(outgoing_flow)) {
-            xml_add_child(child_process_node,
+        for (outgoing_element in outgoing_elements) {
+          if (!is.na(outgoing_element)) {
+            xml_add_child(bpmn_element_node,
                           "bpmn:outgoing",
-                          outgoing_flow)
+                          outgoing_element)
           }
         }
       }
     }
   }
+
+# Creates BPMN element nodes as children from "process" node
+.xml.create.bpmn.element.nodes <- function(bpmn,
+                                           process_node,
+                                           xml_attributes,
+                                           type_attributes,
+                                           singular_of_bpmn_elements,
+                                           plural_of_bpmn_elements) {
+  # Adds BPMN element nodes as children from "process" node
+  for (bpmn_element in names(bpmn)) {
+    transposed_bpmn_element <- transpose(bpmn[[bpmn_element]])
+    for (i in seq_along(transposed_bpmn_element)) {
+      individual_bpmn_element <- list(transposed_bpmn_element[[i]])
+      names(individual_bpmn_element) <-
+        paste("bpmn", singular_of_bpmn_elements[[bpmn_element]], sep = ":")
+      
+      # Adds BPMN element node as a child from "process" node
+      bpmn_element_node <-
+        .xml.add.and.return.child(process_node, names(individual_bpmn_element))
+      
+      # Sets attributes to, changes name of and adds possible children to the BPMN element node
+      .xml.modifies.bpmn.element.node(bpmn_element_node,
+                                      individual_bpmn_element,
+                                      xml_attributes,
+                                      type_attributes)
+    }
+  }
+  
+  # Creates incoming and outgoing sequence flows for every BPMN element node
+  .xml.create.incoming.outgoing.sequenceFlows(bpmn, process_node, plural_of_bpmn_elements)
+}
+
+# Creates "process" node as a child from "definitions" node
+.xml.create.process.node <-
+  function(bpmn_xml,
+           bpmn,
+           xml_attributes,
+           type_attributes,
+           singular_of_bpmn_elements,
+           plural_of_bpmn_elements) {
+    # Adds "process" node as a child from "definitions" node
+    process_node <-
+      .xml.add.and.return.child(bpmn_xml, "bpmn:process")
+    xml_set_attr(process_node, "id", paste0("sid-", UUIDgenerate()))
+    
+    # Creates BPMN element nodes as children from "process" node
+    .xml.create.bpmn.element.nodes(
+      bpmn,
+      process_node,
+      xml_attributes,
+      type_attributes,
+      singular_of_bpmn_elements,
+      plural_of_bpmn_elements
+    )
+    
+    return(process_node)
+  }
+
+# ==============================================================================
 
 # ???
 .create.incoming.outgoing.elements.df <-
@@ -238,7 +240,7 @@ library("xml2")
       bind_rows(incoming_outgoing_elements)
   }
 
-# ???
+# Creates "BPMNDiagram" node as a child from "definitions" node
 .xml.create.BPMNDiagram.node <-
   function(bpmn_xml,
            process_node,
@@ -299,10 +301,10 @@ library("xml2")
     x_y_coordinates <- .compute.coordinates(bpmn$sequenceFlows)
     
     # ???
-    children_process_node <- xml_children(process_node)
-    for (child_process_node in children_process_node) {
+    bpmn_element_nodes <- xml_children(process_node)
+    for (bpmn_element_node in bpmn_element_nodes) {
       # ???
-      element <- xml_name(child_process_node)
+      element <- xml_name(bpmn_element_node)
       if (element == "sequenceFlow") {
         bpmndi_element <- "BPMNEdge"
       } else {
@@ -315,7 +317,7 @@ library("xml2")
                                   paste("bpmndi", bpmndi_element, sep = ":"))
       xml_set_attr(child_BPMNPlane_node,
                    "bpmnElement",
-                   xml_attr(child_process_node, "id"))
+                   xml_attr(bpmn_element_node, "id"))
       
       # ???
       if (element != "sequenceFlow") {
@@ -345,10 +347,10 @@ library("xml2")
                      bpmn_shape_dimensions[[element]][["width"]])
         xml_set_attr(dc_node,
                      "x",
-                     x_y_coordinates[["x"]][which(x_y_coordinates[["id"]] == xml_attr(child_process_node, "id"))] - as.numeric(bpmn_shape_dimensions[[element]][["width"]]) / 2)
+                     x_y_coordinates[["x"]][which(x_y_coordinates[["id"]] == xml_attr(bpmn_element_node, "id"))] - as.numeric(bpmn_shape_dimensions[[element]][["width"]]) / 2)
         xml_set_attr(dc_node,
                      "y",
-                     x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == xml_attr(child_process_node, "id"))] - as.numeric(bpmn_shape_dimensions[[element]][["height"]]) / 2)
+                     x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == xml_attr(bpmn_element_node, "id"))] - as.numeric(bpmn_shape_dimensions[[element]][["height"]]) / 2)
       } else if (element == "sequenceFlow") {
         id_sequenceFlow <-
           incoming_outgoing_elements_df[["id"]][which(
@@ -453,13 +455,6 @@ library("xml2")
         }
       }
     }
-  }
-
-# Adds child to XML node and returns this child
-.xml.add.and.return.child <-
-  function(parent, child_to_add) {
-    xml_add_child(parent, child_to_add)
-    xml_child(parent, search = length(xml_children(parent)))
   }
 
 # ???
@@ -615,21 +610,21 @@ create_xml <- function(bpmn, ...) {
     }
   }
   
-  # ??? (bpmn_xml vervangen door definitions_node?)
+  # Creates "defitions" node
   bpmn_xml <- .xml.create.definitions.node()
   
-  # ???
+  # Creates "process" node as a child from "definitions" node
   process_node <-
     .xml.create.process.node(
       bpmn_xml,
       bpmn,
-      singular_of_bpmn_elements,
-      plural_of_bpmn_elements,
       xml_attributes,
-      type_attributes
+      type_attributes,
+      singular_of_bpmn_elements,
+      plural_of_bpmn_elements
     )
   
-  # ???
+  # Creates "BPMNDiagram" node as a child from "definitions" node
   BPMNDiagram_node <- .xml.create.BPMNDiagram.node(
     bpmn_xml,
     process_node,
