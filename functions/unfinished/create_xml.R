@@ -302,8 +302,226 @@ library("xml2")
            x = 2 * x)
 }
 
-# ???
-.xml.create.BPMNPlane.children <-
+# Creates "Bounds" node as a child from "BPMNPShape" node
+.xml.create.bounds.node <-
+  function(child_BPMNPlane_node,
+           bpmn_element_node,
+           element,
+           x_y_coordinates,
+           bpmn_shape_dimensions) {
+    # Adds "Bounds" node as a child from "BPMNPlane" node
+    bounds_node <-
+      .xml.add.and.return.child(child_BPMNPlane_node, "dc:Bounds")
+    
+    # Adds "BPMNLabel" node as a child from "BPMNPlane" node (which is not required)
+    BPMNLabel_node <-
+      .xml.add.and.return.child(child_BPMNPlane_node, "bpmndi:BPMNLabel")
+    
+    # Sets height, width, x and y attribute to the "Bounds" node
+    xml_set_attr(bounds_node,
+                 "height",
+                 bpmn_shape_dimensions[[element]][["height"]])
+    xml_set_attr(bounds_node,
+                 "width",
+                 bpmn_shape_dimensions[[element]][["width"]])
+    xml_set_attr(bounds_node,
+                 "x",
+                 x_y_coordinates[["x"]][which(x_y_coordinates[["id"]] == xml_attr(bpmn_element_node, "id"))] - as.numeric(bpmn_shape_dimensions[[element]][["width"]]) / 2)
+    xml_set_attr(bounds_node,
+                 "y",
+                 x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == xml_attr(bpmn_element_node, "id"))] - as.numeric(bpmn_shape_dimensions[[element]][["height"]]) / 2)
+  }
+
+# Sets coordinates of first "waypoint" node
+.xml.set.coordinates.first.waypoint.node <-
+  function(first_waypoint_node,
+           x_y_coordinates,
+           id_incoming,
+           id_outgoing,
+           element_incoming,
+           bpmn_shape_dimensions) {
+    if (element_incoming == "gateway" &&
+        x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_outgoing)] > x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_incoming)]) {
+      # Attaches starting point of sequence flow to the top of the gateway to eventually make a 90-degree angle to the right
+      x_extra <- 0
+      y_extra <-
+        as.numeric(bpmn_shape_dimensions[[element_incoming]][["height"]]) / 2
+    } else if (element_incoming == "gateway" &&
+               x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_outgoing)] < x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_incoming)]) {
+      # Attaches starting point of sequence flow to the bottom of the gateway to eventually make a 90-degree angle to the right
+      x_extra <- 0
+      y_extra <-
+        -as.numeric(bpmn_shape_dimensions[[element_incoming]][["height"]]) / 2
+    } else {
+      # Attaches starting point of sequence flow to the right side of the element
+      x_extra <-
+        as.numeric(bpmn_shape_dimensions[[element_incoming]][["width"]]) / 2
+      y_extra <- 0
+    }
+    
+    # Sets coordinates of first "waypoint" node
+    xml_set_attr(first_waypoint_node,
+                 "x",
+                 x_y_coordinates[["x"]][which(x_y_coordinates[["id"]] == id_incoming)] + x_extra)
+    xml_set_attr(first_waypoint_node,
+                 "y",
+                 x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_incoming)] + y_extra)
+  }
+
+# Sets coordinates of second "waypoint" node
+.xml.set.coordinates.second.waypoint.node <-
+  function(second_waypoint_node,
+           child_BPMNPlane_node,
+           x_y_coordinates,
+           id_outgoing,
+           id_incoming,
+           element_incoming,
+           element_outgoing,
+           bpmn_shape_dimensions) {
+    if (x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_outgoing)] == x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_incoming)]) {
+      # Sets coordinates of second "waypoint" node by attaching end of sequence flow to the left side of the next element
+      xml_set_attr(
+        second_waypoint_node,
+        "x",
+        x_y_coordinates[["x"]][which(x_y_coordinates[["id"]] == id_outgoing)] - as.numeric(bpmn_shape_dimensions[[element_outgoing]][["width"]]) / 2
+      )
+      xml_set_attr(second_waypoint_node,
+                   "y",
+                   x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_outgoing)])
+      
+      # Sets logical variable to FALSE (because a 90-degree angle was not needed to attach sequence flow horizontally)
+      third_waypoint_node_needed <- FALSE
+    } else {
+      if (element_incoming == "gateway") {
+        # Sets coordinates of second "waypoint" node to x coordinate of the element and y coordinate of the next element
+        xml_set_attr(second_waypoint_node,
+                     "x",
+                     x_y_coordinates[["x"]][which(x_y_coordinates[["id"]] == id_incoming)])
+        xml_set_attr(second_waypoint_node,
+                     "y",
+                     x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_outgoing)])
+      } else {
+        # Sets coordinates of second "waypoint" node to x coordinate of the next element and y coordinate of the element
+        xml_set_attr(second_waypoint_node,
+                     "x",
+                     x_y_coordinates[["x"]][which(x_y_coordinates[["id"]] == id_outgoing)])
+        xml_set_attr(second_waypoint_node,
+                     "y",
+                     x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_incoming)])
+      }
+      
+      # Sets logical variable to TRUE (because a 90-degree angle was needed to attach sequence flow horizontally)
+      third_waypoint_node_needed <- TRUE
+    }
+    
+    return(third_waypoint_node_needed)
+  }
+
+# Sets coordinates of third "waypoint" node
+xml.set.coordinates.third.waypoint.node <-
+  function(third_waypoint_node,
+           child_BPMNPlane_node,
+           x_y_coordinates,
+           id_incoming,
+           id_outgoing,
+           element_outgoing,
+           bpmn_shape_dimensions) {
+    if (element_outgoing == "gateway") {
+      # Attaches end point of sequence flow to the bottom of the gateway
+      if (x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_outgoing)] > x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_incoming)]) {
+        x_extra <- 0
+        y_extra <-
+          -as.numeric(bpmn_shape_dimensions[[element_outgoing]][["height"]]) / 2
+      } else {
+        # Attaches end point of sequence flow to the top of the gateway
+        x_extra <- 0
+        y_extra <-
+          as.numeric(bpmn_shape_dimensions[[element_outgoing]][["height"]]) / 2
+      }
+    } else {
+      # Attaches end point of sequence flow to the left side of the next element
+      x_extra <-
+        -as.numeric(bpmn_shape_dimensions[[element_outgoing]][["width"]]) / 2
+      y_extra <- 0
+    }
+    
+    # Sets coordinates of third "waypoint" node
+    xml_set_attr(third_waypoint_node,
+                 "x",
+                 x_y_coordinates[["x"]][which(x_y_coordinates[["id"]] == id_outgoing)] + x_extra)
+    xml_set_attr(third_waypoint_node,
+                 "y",
+                 x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_outgoing)] + y_extra)
+  }
+
+# Creates "waypoint" nodes as children from "BPMNPEdge" node
+.xml.create.waypoint.nodes <-
+  function(incoming_outgoing_elements_df,
+           child_BPMNPlane_node,
+           x_y_coordinates,
+           bpmn_shape_dimensions) {
+    # Retrieves necessary ids and elements to create the "waypoint" nodes
+    id_sequenceFlow <-
+      incoming_outgoing_elements_df[["id"]][which(incoming_outgoing_elements_df[["id"]] == xml_attr(child_BPMNPlane_node, "bpmnElement"))]
+    id_incoming <-
+      incoming_outgoing_elements_df[["incoming"]][which(incoming_outgoing_elements_df[["id"]] == id_sequenceFlow)]
+    id_outgoing <-
+      incoming_outgoing_elements_df[["outgoing"]][which(incoming_outgoing_elements_df[["id"]] == id_sequenceFlow)]
+    element_incoming <-
+      unique(incoming_outgoing_elements_df[["element"]][which(incoming_outgoing_elements_df[["id"]] == id_incoming)])[[1]]
+    element_outgoing <-
+      unique(incoming_outgoing_elements_df[["element"]][which(incoming_outgoing_elements_df[["id"]] == id_outgoing)])[[1]]
+    
+    # Adds two "waypoint" nodes as children from "BPMNEdge" node (because there will always be one starting point and one end point of the sequence flow)
+    first_waypoint_node <-
+      .xml.add.and.return.child(child_BPMNPlane_node, "di:waypoint")
+    second_waypoint_node <-
+      .xml.add.and.return.child(child_BPMNPlane_node, "di:waypoint")
+    
+    # Sets coordinates of first "waypoint" node
+    .xml.set.coordinates.first.waypoint.node(
+      first_waypoint_node,
+      x_y_coordinates,
+      id_incoming,
+      id_outgoing,
+      element_incoming,
+      bpmn_shape_dimensions
+    )
+    
+    # Sets coordinates of second "waypoint" node
+    third_waypoint_node_needed <-
+      .xml.set.coordinates.second.waypoint.node(
+        second_waypoint_node,
+        child_BPMNPlane_node,
+        x_y_coordinates,
+        id_outgoing,
+        id_incoming,
+        element_incoming,
+        element_outgoing,
+        bpmn_shape_dimensions
+      )
+    
+    # Creates third "waypoint" node as a child from "BPMNEdge" node if needed
+    if (third_waypoint_node_needed) {
+      # Adds "waypoint" node as a child from "BPMNEdge" node
+      third_waypoint_node <-
+        .xml.add.and.return.child(child_BPMNPlane_node, "di:waypoint")
+      
+      # Sets coordinates of third "waypoint" node
+      xml.set.coordinates.third.waypoint.node(
+        third_waypoint_node,
+        child_BPMNPlane_node,
+        x_y_coordinates,
+        id_incoming,
+        id_outgoing,
+        element_outgoing,
+        bpmn_shape_dimensions
+      )
+    }
+  }
+
+# Creates "BPMNShape" and "BPMNEdge" nodes as children from "BPMNPlane" node
+.xml.create.BPMNPlane.node.children <-
   function(bpmn,
            process_node,
            BPMNPlane_node,
@@ -312,10 +530,9 @@ library("xml2")
     # Computes x and y coordinates for every BPMN element except sequence flows
     x_y_coordinates <- .compute.bpmn.element.coordinates(bpmn)
     
-    # ???
+    # Adds "BPMNShape" or "BPMNEdge" nodes as children from "BPMNPlane" node
     bpmn_element_nodes <- xml_children(process_node)
     for (bpmn_element_node in bpmn_element_nodes) {
-      # ???
       element <- xml_name(bpmn_element_node)
       if (element == "sequenceFlow") {
         bpmndi_element <- "BPMNEdge"
@@ -323,7 +540,7 @@ library("xml2")
         bpmndi_element <- "BPMNShape"
       }
       
-      # ???
+      # Adds "BPMNShape" or "BPMNEdge" node as a child from "BPMNPlane" node
       child_BPMNPlane_node <-
         .xml.add.and.return.child(BPMNPlane_node,
                                   paste("bpmndi", bpmndi_element, sep = ":"))
@@ -331,140 +548,32 @@ library("xml2")
                    "bpmnElement",
                    xml_attr(bpmn_element_node, "id"))
       
-      # ???
       if (element != "sequenceFlow") {
+        # Sets "isMarkerVisible" attribute to the "BPMNShape" node
         if (grepl("Gateway", element, fixed = TRUE)) {
-          element <- "gateway"
-          
-          # ???
           xml_set_attr(child_BPMNPlane_node,
                        "isMarkerVisible",
                        "true")
+          # Changes "element" to "gateway" if "Gateway" is in "element"
+          element <- "gateway"
         }
         
-        # Adds ???
-        dc_node <-
-          .xml.add.and.return.child(child_BPMNPlane_node, "dc:Bounds")
-        
-        # Adds ???
-        BPMNLabel_node <-
-          .xml.add.and.return.child(child_BPMNPlane_node, "bpmndi:BPMNLabel")
-        
-        # ???
-        xml_set_attr(dc_node,
-                     "height",
-                     bpmn_shape_dimensions[[element]][["height"]])
-        xml_set_attr(dc_node,
-                     "width",
-                     bpmn_shape_dimensions[[element]][["width"]])
-        xml_set_attr(dc_node,
-                     "x",
-                     x_y_coordinates[["x"]][which(x_y_coordinates[["id"]] == xml_attr(bpmn_element_node, "id"))] - as.numeric(bpmn_shape_dimensions[[element]][["width"]]) / 2)
-        xml_set_attr(dc_node,
-                     "y",
-                     x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == xml_attr(bpmn_element_node, "id"))] - as.numeric(bpmn_shape_dimensions[[element]][["height"]]) / 2)
+        # Creates "Bounds" node as a child from "BPMNPShape" node
+        .xml.create.bounds.node(
+          child_BPMNPlane_node,
+          bpmn_element_node,
+          element,
+          x_y_coordinates,
+          bpmn_shape_dimensions
+        )
       } else if (element == "sequenceFlow") {
-        id_sequenceFlow <-
-          incoming_outgoing_elements_df[["id"]][which(
-            incoming_outgoing_elements_df[["id"]] == xml_attr(child_BPMNPlane_node, "bpmnElement")
-          )]
-        id_incoming <-
-          incoming_outgoing_elements_df[["incoming"]][which(incoming_outgoing_elements_df[["id"]] == id_sequenceFlow)]
-        id_outgoing <-
-          incoming_outgoing_elements_df[["outgoing"]][which(incoming_outgoing_elements_df[["id"]] == id_sequenceFlow)]
-        element_incoming <-
-          unique(incoming_outgoing_elements_df[["element"]][which(incoming_outgoing_elements_df[["id"]] == id_incoming)])[[1]]
-        element_outgoing <-
-          unique(incoming_outgoing_elements_df[["element"]][which(incoming_outgoing_elements_df[["id"]] == id_outgoing)])[[1]]
-        
-        xml_add_child(child_BPMNPlane_node, "di:waypoint")
-        xml_add_child(child_BPMNPlane_node, "di:waypoint")
-        
-        children_BPMNEdge_node <-
-          xml_children(child_BPMNPlane_node)
-        
-        count <- 0
-        for (child_BPMNEdge_node in children_BPMNEdge_node) {
-          if (count == 0) {
-            if (element_incoming == "gateway" &&
-                x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_outgoing)] > x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_incoming)]) {
-              x_extra <- 0
-              y_extra <-
-                as.numeric(bpmn_shape_dimensions[[element_incoming]][["height"]]) / 2
-            } else if (element_incoming == "gateway" &&
-                       x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_outgoing)] < x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_incoming)]) {
-              x_extra <- 0
-              y_extra <-
-                -as.numeric(bpmn_shape_dimensions[[element_incoming]][["height"]]) / 2
-            } else {
-              x_extra <-
-                as.numeric(bpmn_shape_dimensions[[element_incoming]][["width"]]) / 2
-              y_extra <- 0
-            }
-            xml_set_attr(child_BPMNEdge_node,
-                         "x",
-                         x_y_coordinates[["x"]][which(x_y_coordinates[["id"]] == id_incoming)] + x_extra)
-            xml_set_attr(child_BPMNEdge_node,
-                         "y",
-                         x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_incoming)] + y_extra)
-            count <- count + 1
-          } else {
-            if (x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_outgoing)] == x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_incoming)]) {
-              xml_set_attr(
-                child_BPMNEdge_node,
-                "x",
-                x_y_coordinates[["x"]][which(x_y_coordinates[["id"]] == id_outgoing)] - as.numeric(bpmn_shape_dimensions[[element_outgoing]][["width"]]) / 2
-              )
-              xml_set_attr(child_BPMNEdge_node,
-                           "y",
-                           x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_outgoing)])
-            } else {
-              if (element_incoming == "gateway") {
-                xml_set_attr(child_BPMNEdge_node,
-                             "x",
-                             x_y_coordinates[["x"]][which(x_y_coordinates[["id"]] == id_incoming)])
-                xml_set_attr(child_BPMNEdge_node,
-                             "y",
-                             x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_outgoing)])
-              } else {
-                xml_set_attr(child_BPMNEdge_node,
-                             "x",
-                             x_y_coordinates[["x"]][which(x_y_coordinates[["id"]] == id_outgoing)])
-                xml_set_attr(child_BPMNEdge_node,
-                             "y",
-                             x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_incoming)])
-              }
-              
-              xml_add_child(child_BPMNPlane_node, "di:waypoint")
-              
-              children_BPMNEdge_node <-
-                xml_children(child_BPMNPlane_node)
-              
-              if (element_outgoing == "gateway") {
-                if (x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_outgoing)] > x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_incoming)]) {
-                  x_extra <- 0
-                  y_extra <-
-                    -as.numeric(bpmn_shape_dimensions[[element_outgoing]][["height"]]) / 2
-                } else {
-                  x_extra <- 0
-                  y_extra <-
-                    as.numeric(bpmn_shape_dimensions[[element_outgoing]][["height"]]) / 2
-                }
-              } else {
-                x_extra <-
-                  -as.numeric(bpmn_shape_dimensions[[element_outgoing]][["width"]]) / 2
-                y_extra <- 0
-              }
-              
-              xml_set_attr(children_BPMNEdge_node[[3]],
-                           "x",
-                           x_y_coordinates[["x"]][which(x_y_coordinates[["id"]] == id_outgoing)] + x_extra)
-              xml_set_attr(children_BPMNEdge_node[[3]],
-                           "y",
-                           x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_outgoing)] + y_extra)
-            }
-          }
-        }
+        # Creates "waypoint" nodes as children from "BPMNPEdge" node
+        .xml.create.waypoint.nodes(
+          incoming_outgoing_elements_df,
+          child_BPMNPlane_node,
+          x_y_coordinates,
+          bpmn_shape_dimensions
+        )
       }
     }
   }
@@ -488,8 +597,8 @@ library("xml2")
     incoming_outgoing_elements_df <-
       .create.incoming.outgoing.elements.df(bpmn, plural_of_bpmn_elements)
     
-    # ???
-    .xml.create.BPMNPlane.children(
+    # Creates "BPMNShape" and "BPMNEdge" nodes as children from "BPMNPlane" node
+    .xml.create.BPMNPlane.node.children(
       bpmn,
       process_node,
       BPMNPlane_node,
@@ -506,8 +615,7 @@ library("xml2")
            bpmn,
            process_node,
            plural_of_bpmn_elements,
-           bpmn_shape_dimensions,
-           incoming_outgoing_elements_df) {
+           bpmn_shape_dimensions) {
     # Adds "BPMNDiagram" node as a child from "definitions" node
     BPMNDiagram_node <-
       .xml.add.and.return.child(bpmn_xml, "bpmndi:BPMNDiagram")
@@ -631,14 +739,11 @@ create_xml <- function(bpmn, ...) {
     )
   
   # Creates "BPMNDiagram" node as a child from "definitions" node
-  BPMNDiagram_node <- .xml.create.BPMNDiagram.node(
-    bpmn_xml,
-    bpmn,
-    process_node,
-    plural_of_bpmn_elements,
-    bpmn_shape_dimensions,
-    incoming_outgoing_elements_df
-  )
+  BPMNDiagram_node <- .xml.create.BPMNDiagram.node(bpmn_xml,
+                                                   bpmn,
+                                                   process_node,
+                                                   plural_of_bpmn_elements,
+                                                   bpmn_shape_dimensions)
   
   return(bpmn_xml)
 }
