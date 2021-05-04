@@ -5,90 +5,6 @@ library("assertive")
 library("knitr")
 library("purrr")
 
-# ============================= HELPER FUNCTIONS ===============================
-
-# Gives warning message without stopping execution
-.give.warning <- compose(message, paste)
-
-# Stops execution and gives a simple error message
-.stop.script <- compose(stop, simpleError, paste)
-
-# Prints output based on elements that are allowed to be empty or not
-.print.output <-
-  function(bpmn_element,
-           message_string,
-           elements_empty_allowed) {
-    if (bpmn_element %in% elements_empty_allowed) {
-      .give.warning(bpmn_element, message_string)
-    } else {
-      .stop.script(bpmn_element, message_string)
-    }
-  }
-
-# Prints message about the BPMN elements
-.print.message <-
-  function(bpmn,
-           message_string,
-           elements_empty_allowed) {
-    bpmn %>%
-      bpmn[.] %>%
-      names() %>%
-      map(~ .print.output(.x, message_string, elements_empty_allowed))
-  }
-
-# Compares attributes available in the data with a minimal subset of attributes
-.compare.attributes <-
-  function(bpmn_attributes,
-           bpmn_element,
-           minimal_subset_attributes_list,
-           singular_of_bpmn_elements) {
-    minimal_subset_attributes <-
-      minimal_subset_attributes_list[[bpmn_element]]
-    list_of_logicals <-
-      minimal_subset_attributes %in% bpmn_attributes
-    if (!(all(list_of_logicals))) {
-      errors_attributes <-
-        combine_words(minimal_subset_attributes[which(!list_of_logicals)])
-      if (sum(!list_of_logicals) == 1) {
-        error_message <- " is needed as an attribute of the BPMN element "
-      } else {
-        error_message <- " are needed as attributes of the BPMN element "
-      }
-      .stop.script(errors_attributes,
-                   error_message,
-                   singular_of_bpmn_elements[[bpmn_element]],
-                   ".",
-                   sep = "")
-    }
-  }
-
-# Checks for empty data.frames
-.check.for.empty.data.frames <-
-  function(bpmn, elements_empty_allowed) {
-    retrieve_empty_data_frames <- as_mapper(~ nrow(.x) == 0)
-    bpmn %>%
-      map_lgl(retrieve_empty_data_frames) %>%
-      .print.message("is an empty data.frame.", elements_empty_allowed = elements_empty_allowed)
-  }
-
-# Checks per BPMN element if required attributes are present
-.check.for.minimal.subset.attributes <-
-  function(bpmn,
-           minimal_subset_attributes_list,
-           singular_of_bpmn_elements) {
-    bpmn %>%
-      map(~ names(.x)) %>%
-      keep(is_non_empty) %>%
-      imap(
-        ~ .compare.attributes(
-          .x,
-          .y,
-          minimal_subset_attributes_list,
-          singular_of_bpmn_elements
-        )
-      )
-  }
-
 # ============================== MAIN FUNCTION =================================
 
 #' Create BPMN object.
@@ -107,7 +23,6 @@ library("purrr")
 #' @author Alessio Nigro
 #'
 #' @import assertive
-#' @import dplyr
 #' @import knitr
 #' @import purrr
 #'
@@ -212,6 +127,90 @@ create_bpmn <-
     class(bpmn) <- "bpmn"
     
     return(bpmn)
+  }
+
+# ============================= HELPER FUNCTIONS ===============================
+
+# Gives warning message without stopping execution
+.give.warning <- compose(message, paste)
+
+# Stops execution and gives a simple error message
+.stop.script <- compose(stop, simpleError, paste)
+
+# Prints output based on elements that are allowed to be empty or not
+.print.output <-
+  function(bpmn_element,
+           message_string,
+           elements_empty_allowed) {
+    if (bpmn_element %in% elements_empty_allowed) {
+      .give.warning(bpmn_element, message_string)
+    } else {
+      .stop.script(bpmn_element, message_string)
+    }
+  }
+
+# Prints message about the BPMN elements
+.print.message <-
+  function(bpmn,
+           message_string,
+           elements_empty_allowed) {
+    bpmn %>%
+      bpmn[.] %>%
+      names() %>%
+      map(~ .print.output(.x, message_string, elements_empty_allowed))
+  }
+
+# Compares attributes available in the data with a minimal subset of attributes
+.compare.attributes <-
+  function(bpmn_attributes,
+           bpmn_element,
+           minimal_subset_attributes_list,
+           singular_of_bpmn_elements) {
+    minimal_subset_attributes <-
+      minimal_subset_attributes_list[[bpmn_element]]
+    list_of_logicals <-
+      minimal_subset_attributes %in% bpmn_attributes
+    if (!(all(list_of_logicals))) {
+      errors_attributes <-
+        combine_words(minimal_subset_attributes[which(!list_of_logicals)])
+      if (sum(!list_of_logicals) == 1) {
+        error_message <- " is needed as an attribute of the BPMN element "
+      } else {
+        error_message <- " are needed as attributes of the BPMN element "
+      }
+      .stop.script(errors_attributes,
+                   error_message,
+                   singular_of_bpmn_elements[[bpmn_element]],
+                   ".",
+                   sep = "")
+    }
+  }
+
+# Checks for empty data.frames
+.check.for.empty.data.frames <-
+  function(bpmn, elements_empty_allowed) {
+    retrieve_empty_data_frames <- as_mapper(~ nrow(.x) == 0)
+    bpmn %>%
+      map_lgl(retrieve_empty_data_frames) %>%
+      .print.message("is an empty data.frame.", elements_empty_allowed = elements_empty_allowed)
+  }
+
+# Checks per BPMN element if required attributes are present
+.check.for.minimal.subset.attributes <-
+  function(bpmn,
+           minimal_subset_attributes_list,
+           singular_of_bpmn_elements) {
+    bpmn %>%
+      map(~ names(.x)) %>%
+      keep(is_non_empty) %>%
+      imap(
+        ~ .compare.attributes(
+          .x,
+          .y,
+          minimal_subset_attributes_list,
+          singular_of_bpmn_elements
+        )
+      )
   }
 
 # ================================= EXAMPLES ===================================

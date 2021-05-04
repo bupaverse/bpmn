@@ -9,6 +9,121 @@ library("tidyr")
 library("uuid")
 library("xml2")
 
+# ============================== MAIN FUNCTION =================================
+
+#' Create XML document from BPMN object.
+#'
+#' This creates an XML document based on a BPMN object.
+#'
+#' @param bpmn A BPMN object as a list of data.frames.
+#' @param ... Additional arguments passed to methods.
+#'
+#' @return An XML document.
+#'
+#' @author Alessio Nigro
+#'
+#' @import DiagrammeR
+#' @import DiagrammeRsvg
+#' @import dplyr
+#' @import rvest
+#' @import tidyverse
+#' @import uuid
+#' @import xml2
+#'
+#' @export
+#'
+#' @examples
+#' bpmn_instance <-
+#'   create_bpmn(
+#'     data.frame(
+#'       "id" = "id_tsk_1",
+#'       "name" = "task_1",
+#'       stringsAsFactors = FALSE
+#'     ),
+#'     data.frame(
+#'       "id" = c("id_sf_1", "id_sf_2"),
+#'       "name" = c("", ""),
+#'       "sourceRef" = c("id_se_1", "id_tsk_1"),
+#'       "targetRef" = c("id_tsk_1", "id_ee_1"),
+#'       stringsAsFactors = FALSE
+#'     ),
+#'     data.frame(),
+#'     data.frame(
+#'       "id" = "id_se_1",
+#'       "name" = "start_event_1",
+#'       stringsAsFactors = FALSE
+#'     ),
+#'     data.frame(
+#'       "id" = "id_ee_1",
+#'       "name" = "end_event_1",
+#'       stringsAsFactors = FALSE
+#'     )
+#'   )
+#'
+#' bpmn_instance_xml <- create_xml(bpmn_instance)
+#' print(bpmn_instance_xml)
+create_xml <- function(bpmn, ...) {
+  # Defines every data structure that can be changed
+  singular_of_bpmn_elements <- list(
+    tasks = "task",
+    sequenceFlows = "sequenceFlow",
+    gateways = "gateway",
+    startEvent = "startEvent",
+    endEvent = "endEvent"
+  )
+  plural_of_bpmn_elements <- list(
+    task = "tasks",
+    sequenceFlow = "sequenceFlows",
+    gateway = "gateways",
+    startEvent = "startEvent",
+    endEvent = "endEvent"
+  )
+  bpmn_shape_dimensions <- list(
+    task = list(height = "80.0", width = "100.0"),
+    gateway = list(height = "50.0", width = "50.0"),
+    startEvent = list(height = "36.0", width = "36.0"),
+    endEvent = list(height = "36.0", width = "36.0")
+  )
+  elements_empty_allowed <- c("gateways")
+  attributes_to_factors <- c("gatewayType", "gatewayDirection")
+  xml_attributes <-
+    c("id", "name", "sourceRef", "targetRef", "gatewayDirection")
+  type_attributes <- c("gatewayType")
+  
+  # Converts certain attributes from a factor back to character type
+  for (element in names(bpmn)) {
+    for (attribute in names(bpmn[[element]])) {
+      if (attribute %in% attributes_to_factors) {
+        bpmn[[element]][, attribute] <-
+          as.character(bpmn[[element]][, attribute])
+      }
+    }
+  }
+  
+  # Creates "defitions" node
+  bpmn_xml <- .xml.create.definitions.node()
+  
+  # Creates "process" node as a child from "definitions" node
+  process_node <-
+    .xml.create.process.node(
+      bpmn_xml,
+      bpmn,
+      xml_attributes,
+      type_attributes,
+      singular_of_bpmn_elements,
+      plural_of_bpmn_elements
+    )
+  
+  # Creates "BPMNDiagram" node as a child from "definitions" node
+  BPMNDiagram_node <- .xml.create.BPMNDiagram.node(bpmn_xml,
+                                                   bpmn,
+                                                   process_node,
+                                                   plural_of_bpmn_elements,
+                                                   bpmn_shape_dimensions)
+  
+  return(bpmn_xml)
+}
+
 # ============================= HELPER FUNCTIONS ===============================
 
 # Creates "defitions" node
@@ -632,121 +747,6 @@ xml.set.coordinates.third.waypoint.node <-
     
     return(BPMNDiagram_node)
   }
-
-# ============================== MAIN FUNCTION =================================
-
-#' Create XML document from BPMN object.
-#'
-#' This creates an XML document based on a BPMN object.
-#'
-#' @param bpmn A BPMN object as a list of data.frames.
-#' @param ... Additional arguments passed to methods.
-#'
-#' @return An XML document.
-#'
-#' @author Alessio Nigro
-#'
-#' @import DiagrammeR
-#' @import DiagrammeRsvg
-#' @import dplyr
-#' @import rvest
-#' @import tidyverse
-#' @import uuid
-#' @import xml2
-#'
-#' @export
-#'
-#' @examples
-#' bpmn_instance <-
-#'   create_bpmn(
-#'     data.frame(
-#'       "id" = "id_tsk_1",
-#'       "name" = "task_1",
-#'       stringsAsFactors = FALSE
-#'     ),
-#'     data.frame(
-#'       "id" = c("id_sf_1", "id_sf_2"),
-#'       "name" = c("", ""),
-#'       "sourceRef" = c("id_se_1", "id_tsk_1"),
-#'       "targetRef" = c("id_tsk_1", "id_ee_1"),
-#'       stringsAsFactors = FALSE
-#'     ),
-#'     data.frame(),
-#'     data.frame(
-#'       "id" = "id_se_1",
-#'       "name" = "start_event_1",
-#'       stringsAsFactors = FALSE
-#'     ),
-#'     data.frame(
-#'       "id" = "id_ee_1",
-#'       "name" = "end_event_1",
-#'       stringsAsFactors = FALSE
-#'     )
-#'   )
-#'
-#' bpmn_instance_xml <- create_xml(bpmn_instance)
-#' print(bpmn_instance_xml)
-create_xml <- function(bpmn, ...) {
-  # Defines every data structure that can be changed
-  singular_of_bpmn_elements <- list(
-    tasks = "task",
-    sequenceFlows = "sequenceFlow",
-    gateways = "gateway",
-    startEvent = "startEvent",
-    endEvent = "endEvent"
-  )
-  plural_of_bpmn_elements <- list(
-    task = "tasks",
-    sequenceFlow = "sequenceFlows",
-    gateway = "gateways",
-    startEvent = "startEvent",
-    endEvent = "endEvent"
-  )
-  bpmn_shape_dimensions <- list(
-    task = list(height = "80.0", width = "100.0"),
-    gateway = list(height = "50.0", width = "50.0"),
-    startEvent = list(height = "36.0", width = "36.0"),
-    endEvent = list(height = "36.0", width = "36.0")
-  )
-  elements_empty_allowed <- c("gateways")
-  attributes_to_factors <- c("gatewayType", "gatewayDirection")
-  xml_attributes <-
-    c("id", "name", "sourceRef", "targetRef", "gatewayDirection")
-  type_attributes <- c("gatewayType")
-  
-  # Converts certain attributes from a factor back to character type
-  for (element in names(bpmn)) {
-    for (attribute in names(bpmn[[element]])) {
-      if (attribute %in% attributes_to_factors) {
-        bpmn[[element]][, attribute] <-
-          as.character(bpmn[[element]][, attribute])
-      }
-    }
-  }
-  
-  # Creates "defitions" node
-  bpmn_xml <- .xml.create.definitions.node()
-  
-  # Creates "process" node as a child from "definitions" node
-  process_node <-
-    .xml.create.process.node(
-      bpmn_xml,
-      bpmn,
-      xml_attributes,
-      type_attributes,
-      singular_of_bpmn_elements,
-      plural_of_bpmn_elements
-    )
-  
-  # Creates "BPMNDiagram" node as a child from "definitions" node
-  BPMNDiagram_node <- .xml.create.BPMNDiagram.node(bpmn_xml,
-                                                   bpmn,
-                                                   process_node,
-                                                   plural_of_bpmn_elements,
-                                                   bpmn_shape_dimensions)
-  
-  return(bpmn_xml)
-}
 
 # ================================= EXAMPLES ===================================
 
