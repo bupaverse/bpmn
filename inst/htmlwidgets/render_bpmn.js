@@ -27,7 +27,7 @@ HTMLWidgets.widget({
                     var canvas = bpmnViewer.get('canvas');
 
                     // zoom to fit full viewport
-                    canvas.zoom('fit-viewport');
+                    canvas.zoom('fit-viewport', 'auto');
 
                 });
 
