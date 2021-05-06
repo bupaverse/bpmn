@@ -2,5 +2,12 @@ dependencies:
   - name: bpmn-js
     version: 8.3.1
     src: htmlwidgets/lib/bpmn-js-8.3.1/dist/
-    script: bpmn-viewer.production.min.js
-    stylesheet: assets/diagram-js.css
+    script:
+      - bpmn-viewer.production.min.js
+      - bpmn-navigated-viewer.production.min.js
+      # - bpmn-modeler.production.min.js
+    stylesheet:
+      - assets/diagram-js.css
+      # - assets/bpmn-font/css/bpmn-codes.css
+      # - assets/bpmn-font/css/bpmn-embedded.css
+      # - assets/bpmn-font/css/bpmn.css
