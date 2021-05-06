@@ -9,7 +9,7 @@ library("xml2")
 #'
 #' This renders a BPMN diagram based on an XML document.
 #'
-#' @param bpmn_model An XML document, a string, a connection, or a raw vector.
+#' @param bpmn An XML document, a string, a connection, or a raw vector. ???
 #'
 #'   A string can be either a path, a url or literal xml. Urls will be converted
 #'   into connections either using \code{base::url} or, if installed,
@@ -41,16 +41,21 @@ library("xml2")
 #' @import xml2
 #'
 #' @export
-#'
-#' @examples
-#' \dontrun{
-#' bpmn_file_path <-
-#'   file.path(getwd(), "example_models", "Golf Club Subscription.bpmn")
-#'   
-#' render_bpmn(bpmn_file_path)
-#' }
-render_bpmn <-
-  function(bpmn_model,
+render_bpmn <- function(bpmn,
+                        viewer.suppress = FALSE,
+                        width = NULL,
+                        height = NULL,
+                        elementId = NULL,
+                        xml_version_number = "1.0",
+                        xml_encoding_declaration = "UTF-8",
+                        ...) {
+  UseMethod("render_bpmn")
+}
+
+#' @rdname render_bpmn
+#' @export
+render_bpmn.bpmn <-
+  function(bpmn,
            viewer.suppress = FALSE,
            width = NULL,
            height = NULL,
@@ -69,12 +74,14 @@ render_bpmn <-
       )
     
     # ???
-    if (inherits(bpmn_model, "xml_document")) {
-      bpmn_model <- as.character(bpmn_model)
-    } else if (inherits(bpmn_model, "character") &&
-               substring(bpmn_model, 1, 38) != xml_declaration) {
+    if (inherits(bpmn, "bpmn")) {
+      bpmn_model <- as.character(bpmn[["xml"]])
+    } else if (inherits(bpmn, "character") &&
+               substring(bpmn, 1, 38) != xml_declaration) {
       # this must be a file name
-      bpmn_model <- as.character(read_xml(bpmn_model))
+      bpmn_model <- as.character(read_xml(bpmn))
+    } else {
+      bpmn_model <- as.character(bpmn)
     }
     
     # forward options using x
@@ -131,52 +138,3 @@ renderRender_bpmn <-
     } # force quoted
     htmlwidgets::shinyRenderWidget(expr, render_bpmnOutput, env, quoted = TRUE)
   }
-
-# ================================= EXAMPLES ===================================
-
-# Delete this section when render_bpmn will be included in a package?
-bpmn_file_path <-
-  file.path(getwd(), "example_models", "Golf Club Subscription.bpmn")
-render_bpmn(bpmn_file_path)
-
-golf_club_subscription_bpmn_file <-
-  read_xml(
-    file.path(
-      getwd(),
-      "test_outputs",
-      "test_create_xml",
-      "golf_club_subscription_xml.bpmn"
-    )
-  )
-render_bpmn(golf_club_subscription_bpmn_file)
-
-handling_of_incoming_job_applications_bpmn_file <-
-  read_xml(
-    file.path(
-      getwd(),
-      "test_outputs",
-      "test_create_xml",
-      "handling_of_incoming_job_applications_xml.bpmn"
-    )
-  )
-render_bpmn(handling_of_incoming_job_applications_bpmn_file)
-
-training_and_certification_propose_training_bpmn_file <-
-  read_xml(
-    file.path(
-      getwd(),
-      "test_outputs",
-      "test_create_xml",
-      "training_and_certification_propose_training_xml.bpmn"
-    )
-  )
-render_bpmn(training_and_certification_propose_training_bpmn_file)
-
-test_diagram_bpmn_file <-
-  read_xml(file.path(
-    getwd(),
-    "test_outputs",
-    "test_create_xml",
-    "test_diagram_xml.bpmn"
-  ))
-render_bpmn(test_diagram_bpmn_file, viewer.suppress = TRUE)
