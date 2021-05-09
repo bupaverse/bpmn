@@ -15,10 +15,10 @@ library("xml2")
 #'
 #' This creates an XML document based on a BPMN object.
 #'
-#' @param bpmn A BPMN object as a list of data.frames.
+#' @param bpmn A BPMN object as a list of data.frames for the BPMN elements.
 #' @param ... Additional arguments passed to methods.
 #'
-#' @return An XML document.
+#' @return An XML document for the XML-based interchange format for the BPMN process.
 #'
 #' @author Alessio Nigro
 #'
@@ -54,10 +54,10 @@ create_xml.bpmn <- function(bpmn, ...) {
     endEvent = "endEvent"
   )
   bpmn_shape_dimensions <- list(
-    task = list(height = "80.0", width = "100.0"),
-    gateway = list(height = "50.0", width = "50.0"),
-    startEvent = list(height = "36.0", width = "36.0"),
-    endEvent = list(height = "36.0", width = "36.0")
+    task = list(height = "80", width = "100"),
+    gateway = list(height = "50", width = "50"),
+    startEvent = list(height = "36", width = "36"),
+    endEvent = list(height = "36", width = "36")
   )
   elements_empty_allowed <- c("gateways")
   attributes_to_factors <- c("gatewayType", "gatewayDirection")
@@ -110,7 +110,7 @@ create_xml.bpmn <- function(bpmn, ...) {
   xml_set_attrs(
     bpmn_xml,
     c(
-      "id" = paste0("sid-", UUIDgenerate()),
+      "id" = paste0("definitions-", UUIDgenerate()),
       "xmlns:bpmn" = "http://www.omg.org/spec/BPMN/20100524/MODEL",
       "xmlns:bpmndi" = "http://www.omg.org/spec/BPMN/20100524/DI",
       "xmlns:dc" = "http://www.omg.org/spec/DD/20100524/DC",
@@ -122,8 +122,8 @@ create_xml.bpmn <- function(bpmn, ...) {
     )
   )
   
-  # Adds "bpmn" prefix to root node (which could not be done before namespace "bpmn" was declared)
-  xml_name(bpmn_xml) <- "bpmn:definitions"
+  # Sets namespace prefix "bpmn" to root node (which could not be done before namespace "bpmn" was defined)
+  xml_set_namespace(bpmn_xml, prefix = "bpmn")
   
   return(bpmn_xml)
 }
@@ -301,7 +301,7 @@ create_xml.bpmn <- function(bpmn, ...) {
     # Adds "process" node as a child from "definitions" node
     process_node <-
       .xml.add.and.return.child(bpmn_xml, "bpmn:process")
-    xml_set_attr(process_node, "id", paste0("sid-", UUIDgenerate()))
+    xml_set_attr(process_node, "id", paste0("process-", UUIDgenerate()))
     
     # Creates BPMN element nodes as children from "process" node
     .xml.create.bpmn.element.nodes(
@@ -329,68 +329,81 @@ create_xml.bpmn <- function(bpmn, ...) {
   }
 
 # Computes x and y coordinates for every BPMN element except sequence flows
-.compute.bpmn.element.coordinates <- function(bpmn) {
-  # Gets edges from BPMN object (we assume that all nodes are connected to at least one edge)
-  edges <- bpmn$sequenceFlows
-  
-  # Transforms edges to long format and gives each unique id a number from 1 to n_edges, using as.numeric(factor())
-  # (This "node_id" is needed for DiagrammeR.)
-  edge_list_long <- edges %>%
-    gather(key, original_id, sourceRef, targetRef) %>%
-    mutate(node_id = as.numeric(factor(original_id)))
-  
-  # Creates key table that maps "original_id" to "node_id"
-  node_keys <- edge_list_long %>%
-    select(original_id, node_id) %>%
-    unique()
-  
-  # Removes old id ("original_id") and recreates wide format of edges with new id ("node_id")
-  edges <- edge_list_long %>%
-    select(-original_id) %>%
-    spread(key, node_id)
-  
-  # Uses "sourceRef" and "targetRef" (which are now simple ids from 1 till n) to build edge data.frame
-  edge_df <-
-    create_edge_df(from = edges$sourceRef, to = edges$targetRef)
-  
-  # Creates node data.frame with correct number of nodes (which is the number of rows in "node_keys")
-  node_df <- create_node_df(nrow(node_keys))
-  
-  # Creates graph, sets appropriate layout options, renders graph and saves SVG/dot notation
-  dot <- create_graph(node_df, edge_df) %>%
-    add_global_graph_attrs(attr = "rankdir",
-                           value = "LR",
-                           attr_type = "graph") %>%
-    add_global_graph_attrs(attr = "layout",
-                           value = "dot",
-                           attr_type = "graph") %>%
-    render_graph() %>%
-    export_svg()
-  
-  # Reads dot notation and selects all SVG <g> elements
-  g_elements <- read_html(dot) %>%
-    html_nodes("g")
-  
-  # Subsets nodes from "g_elements" (which are elements that have a node attribute)
-  nodes <-
-    g_elements[map_lgl(g_elements, ~ ("node" %in% html_attrs(.x)))]
-  
-  # Creates table with the numerical node id and coordinates from the node
-  coordinates <- tibble(
-    node_id = as.numeric(nodes %>% html_node("title") %>% html_text()),
-    x = as.numeric(nodes %>% html_node("ellipse") %>% html_attr("cx")),
-    y = as.numeric(nodes %>% html_node("ellipse") %>% html_attr("cy"))
-  )
-  
-  # Joins "coordinates" with original ids
-  output <- node_keys %>%
-    inner_join(coordinates, by = "node_id") %>%
-    # Removes "node_id" and renames "original_id" to "id"
-    select(id = original_id, x, y) %>%
-    # Rescales x and y (probably to be further optimized / corrected for height/width of elements)
-    mutate(y = y * -5,
-           x = 2 * x)
-}
+.compute.bpmn.element.coordinates <-
+  function(bpmn, bpmn_shape_dimensions) {
+    # Gets edges from BPMN object (we assume that all nodes are connected to at least one edge)
+    edges <- bpmn$sequenceFlows
+    
+    # Transforms edges to long format and gives each unique id a number from 1 to n_edges, using as.numeric(factor())
+    # (This "node_id" is needed for DiagrammeR.)
+    edge_list_long <- edges %>%
+      gather(key, original_id, sourceRef, targetRef) %>%
+      mutate(node_id = as.numeric(factor(original_id)))
+    
+    # Creates key table that maps "original_id" to "node_id"
+    node_keys <- edge_list_long %>%
+      select(original_id, node_id) %>%
+      unique()
+    
+    # Removes old id ("original_id") and recreates wide format of edges with new id ("node_id")
+    edges <- edge_list_long %>%
+      select(-original_id) %>%
+      spread(key, node_id)
+    
+    # Uses "sourceRef" and "targetRef" (which are now simple ids from 1 till n) to build edge data.frame
+    edge_df <-
+      create_edge_df(from = edges$sourceRef, to = edges$targetRef)
+    
+    # Creates node data.frame with correct number of nodes (which is the number of rows in "node_keys")
+    node_df <- create_node_df(nrow(node_keys))
+    
+    # Creates graph, sets appropriate layout options, renders graph and saves SVG/dot notation
+    dot <- create_graph(node_df, edge_df) %>%
+      add_global_graph_attrs(attr = "rankdir",
+                             value = "LR",
+                             attr_type = "graph") %>%
+      add_global_graph_attrs(attr = "layout",
+                             value = "dot",
+                             attr_type = "graph") %>%
+      render_graph(layout = "tree") %>%
+      export_svg()
+    
+    # Reads dot notation and selects all SVG <g> elements
+    g_elements <- read_html(dot) %>%
+      html_nodes("g")
+    
+    # Subsets nodes from "g_elements" (which are elements that have a node attribute)
+    nodes <-
+      g_elements[map_lgl(g_elements, ~ ("node" %in% html_attrs(.x)))]
+    
+    # Creates table with the numerical node id and coordinates from the node
+    coordinates <- tibble(
+      node_id = as.numeric(nodes %>% html_node("title") %>% html_text()),
+      x = as.numeric(nodes %>% html_node("ellipse") %>% html_attr("cy")),
+      y = as.numeric(nodes %>% html_node("ellipse") %>% html_attr("cx"))
+    )
+    
+    # Retrieves heights and widths of BPMN elements
+    bpmn_shape_heights <- names(bpmn_shape_dimensions) %>%
+      map(~ bpmn_shape_dimensions[[.x]][["height"]])
+    bpmn_shape_widths <- names(bpmn_shape_dimensions) %>%
+      map(~ bpmn_shape_dimensions[[.x]][["width"]])
+    
+    # Joins "coordinates" with original ids
+    output <- node_keys %>%
+      inner_join(coordinates, by = "node_id") %>%
+      # Removes "node_id" and renames "original_id" to "id"
+      select(id = original_id, x, y) %>%
+      # Rescales x and y (probably to be further optimized / corrected for height/width of elements)
+      mutate(
+        y = 3 * y - 3 * min(y) + as.numeric(max(unlist(
+          bpmn_shape_heights
+        ))) / 2,
+        x = 2 * x - 2 * min(x) + as.numeric(max(unlist(
+          bpmn_shape_widths
+        ))) / 2
+      )
+  }
 
 # Creates "Bounds" node as a child from "BPMNPShape" node
 .xml.create.bounds.node <-
@@ -514,9 +527,11 @@ create_xml.bpmn <- function(bpmn, ...) {
            x_y_coordinates,
            id_incoming,
            id_outgoing,
+           element_incoming,
            element_outgoing,
            bpmn_shape_dimensions) {
-    if (element_outgoing == "gateway") {
+    if (element_outgoing == "gateway" &&
+        element_incoming != "gateway") {
       # Attaches end point of sequence flow to the bottom of the gateway
       if (x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_outgoing)] > x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_incoming)]) {
         x_extra <- 0
@@ -604,6 +619,7 @@ create_xml.bpmn <- function(bpmn, ...) {
         x_y_coordinates,
         id_incoming,
         id_outgoing,
+        element_incoming,
         element_outgoing,
         bpmn_shape_dimensions
       )
@@ -618,7 +634,8 @@ create_xml.bpmn <- function(bpmn, ...) {
            bpmn_shape_dimensions,
            incoming_outgoing_elements_df) {
     # Computes x and y coordinates for every BPMN element except sequence flows
-    x_y_coordinates <- .compute.bpmn.element.coordinates(bpmn)
+    x_y_coordinates <-
+      .compute.bpmn.element.coordinates(bpmn, bpmn_shape_dimensions)
     
     # Adds "BPMNShape" or "BPMNEdge" nodes as children from "BPMNPlane" node
     bpmn_element_nodes <- xml_children(process_node)
@@ -681,7 +698,7 @@ create_xml.bpmn <- function(bpmn, ...) {
     xml_set_attr(BPMNPlane_node,
                  "bpmnElement",
                  xml_attr(process_node, "id"))
-    xml_set_attr(BPMNPlane_node, "id", paste0("sid-", UUIDgenerate()))
+    xml_set_attr(BPMNPlane_node, "id", paste0("BPMNPlane-", UUIDgenerate()))
     
     # Creates data.frame of incoming and outgoing elements for every BPMN element node
     incoming_outgoing_elements_df <-
@@ -709,7 +726,9 @@ create_xml.bpmn <- function(bpmn, ...) {
     # Adds "BPMNDiagram" node as a child from "definitions" node
     BPMNDiagram_node <-
       .xml.add.and.return.child(bpmn_xml, "bpmndi:BPMNDiagram")
-    xml_set_attr(BPMNDiagram_node, "id", paste0("sid-", UUIDgenerate()))
+    xml_set_attr(BPMNDiagram_node,
+                 "id",
+                 paste0("BPMNDiagram-", UUIDgenerate()))
     
     # Creates "BPMNPlane" node as a child from "BPMNDiagram" node
     BPMNPlane_node <- .xml.create.BPMNPlane.node(
