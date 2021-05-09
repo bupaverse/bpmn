@@ -11,8 +11,7 @@ library("xml2")
 #' output the same format which was read. If you want to force output pass
 #' `option = "as_xml"` or `option = "as_html"` respectively.
 #'
-#' @param bpmn A document or node to write to disk. It's not possible to
-#'   save nodesets containing more than one node. ???
+#' @param bpmn A BPMN object as a list of data.frames for the BPMN elements and an XML document for the XML-based interchange format for the BPMN process.
 #' @param file Path to file or connection to write to.
 #' @param ... Additional arguments passed to methods.
 #' @param options default: \sQuote{format}. Zero or more of
@@ -42,12 +41,11 @@ write_bpmn.bpmn <-
            ...,
            options = "format",
            encoding = "UTF-8") {
-    # ???
     if (inherits(bpmn[["xml"]], "xml_document")) {
       write_xml(bpmn[["xml"]], file, ..., options = options, encoding = encoding)
       
-      return(message(paste(
-        "Successfully written file to '", file, "'.", sep = ""
+      return(message(paste0(
+        "Successfully written file to '", file, "'.\n"
       )))
     }
   }
