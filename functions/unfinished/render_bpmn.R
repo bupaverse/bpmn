@@ -1,5 +1,6 @@
 # ================================= PACKAGES ===================================
 
+# Delete this section when render_bpmn will be included in a package with imports?
 library("htmlwidgets")
 library("xml2")
 
@@ -7,17 +8,10 @@ library("xml2")
 
 #' Render BPMN diagram.
 #'
-#' This renders a BPMN diagram based on an XML document.
+#' This renders a BPMN diagram based on a BPMN object.
 #'
-#' @param bpmn An XML document, a string, a connection, or a raw vector. ???
-#'
-#'   A string can be either a path, a url or literal xml. Urls will be converted
-#'   into connections either using \code{base::url} or, if installed,
-#'   \code{curl::curl}. Local paths ending in \code{.gz}, \code{.bz2},
-#'   \code{.xz}, \code{.zip} will be automatically uncompressed.
-#'
-#'   If a connection, the complete connection is read into a raw vector before
-#'   being parsed.
+#' @param bpmn A BPMN object as a list of data.frames for the BPMN elements and
+#'   an XML document for the XML-based interchange format for the BPMN process.
 #' @param viewer.suppress Never display the widget within the RStudio Viewer
 #'   (useful for widgets that require a large amount of space for rendering).
 #'   Defaults to FALSE.
@@ -63,7 +57,7 @@ render_bpmn.bpmn <-
            xml_version_number = "1.0",
            xml_encoding_declaration = "UTF-8",
            ...) {
-    # ???
+    # Defines XML declaration to check it if "bpmn" is not of class "bpmn"
     xml_declaration <-
       paste0(
         '<?xml version="',
@@ -73,27 +67,31 @@ render_bpmn.bpmn <-
         '"?>'
       )
     
-    # ???
+    # Converts XML to character type
     if (inherits(bpmn, "bpmn")) {
+      # Converts XML part of BPMN object to character type
       bpmn_model <- as.character(bpmn[["xml"]])
     } else if (inherits(bpmn, "character") &&
                substring(bpmn, 1, 38) != xml_declaration) {
-      # this must be a file name
+      # Reads XML from file and converts it to character type
+      # (currently not possible to execute this statement)
       bpmn_model <- as.character(read_xml(bpmn))
     } else {
+      # Converts XML to character type
+      # (currently not possible to execute this statement)
       bpmn_model <- as.character(bpmn)
     }
     
-    # forward options using x
+    # Forwards options using "x"
     x <- list(bpmn_model = bpmn_model)
     
-    # create widget
+    # Creates widget
     htmlwidgets::createWidget(
       name = "render_bpmn",
       x,
       width = width,
       height = height,
-      package = "bpmn",
+      package = "bpmnR",
       elementId = elementId,
       sizingPolicy(
         viewer.fill = TRUE,
@@ -117,6 +115,8 @@ render_bpmn.bpmn <-
 #' @param quoted Is \code{expr} a quoted expression (with \code{quote()})? This
 #'   is useful if you want to save an expression in a variable.
 #'
+#' @author Alessio Nigro
+#'
 #' @name render_bpmn-shiny
 #'
 #' @export
@@ -124,17 +124,20 @@ render_bpmnOutput <-
   function(outputId,
            width = "100%",
            height = "400px") {
-    htmlwidgets::shinyWidgetOutput(outputId, "render_bpmn", width, height, package = "bpmn")
+    htmlwidgets::shinyWidgetOutput(outputId, "render_bpmn", width, height, package = "bpmnR")
   }
 
+#' @author Alessio Nigro
+#'
 #' @rdname render_bpmn-shiny
 #' @export
 renderRender_bpmn <-
   function(expr,
            env = parent.frame(),
            quoted = FALSE) {
+    # Forces "quoted"
     if (!quoted) {
       expr <- substitute(expr)
-    } # force quoted
+    }
     htmlwidgets::shinyRenderWidget(expr, render_bpmnOutput, env, quoted = TRUE)
   }
