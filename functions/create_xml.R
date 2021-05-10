@@ -4,6 +4,7 @@
 library("DiagrammeR")
 library("DiagrammeRsvg")
 library("dplyr")
+library("rlang")
 library("rvest")
 library("tidyr")
 library("uuid")
@@ -29,6 +30,7 @@ library("xml2")
 #' @import tidyr
 #' @import uuid
 #' @import xml2
+#' @importFrom rlang .data
 #'
 #' @export
 create_xml <- function(bpmn, ...) {
@@ -122,7 +124,8 @@ create_xml.bpmn <- function(bpmn, ...) {
     )
   )
   
-  # Sets namespace prefix "bpmn" to root node (which could not be done before namespace "bpmn" was defined)
+  # Sets namespace prefix "bpmn" to root node
+  # (which could not be done before namespace "bpmn" was defined)
   xml_set_namespace(bpmn_xml, prefix = "bpmn")
   
   return(bpmn_xml)
@@ -168,11 +171,11 @@ create_xml.bpmn <- function(bpmn, ...) {
   function(bpmn, bpmn_element) {
     bpmn[[bpmn_element]] %>%
       left_join(bpmn[["sequenceFlows"]], by = c("id" = "targetRef")) %>%
-      select(id, id.y) %>%
-      rename(incoming = id.y) %>%
+      select(id, .data$id.y) %>%
+      rename(incoming = .data$id.y) %>%
       left_join(bpmn[["sequenceFlows"]], by = c("id" = "sourceRef")) %>%
-      select(id, incoming, id.y) %>%
-      rename(outgoing = id.y)
+      select(id, .data$incoming, .data$id.y) %>%
+      rename(outgoing = .data$id.y)
   }
 
 # Retrieves incoming and outgoing elements for every BPMN element node
@@ -337,18 +340,18 @@ create_xml.bpmn <- function(bpmn, ...) {
     # Transforms edges to long format and gives each unique id a number from 1 to n_edges, using as.numeric(factor())
     # (This "node_id" is needed for DiagrammeR.)
     edge_list_long <- edges %>%
-      gather(key, original_id, sourceRef, targetRef) %>%
-      mutate(node_id = as.numeric(factor(original_id)))
+      gather("key", "original_id", "sourceRef", "targetRef") %>%
+      mutate(node_id = as.numeric(factor(.data$original_id)))
     
     # Creates key table that maps "original_id" to "node_id"
     node_keys <- edge_list_long %>%
-      select(original_id, node_id) %>%
+      select(.data$original_id, .data$node_id) %>%
       unique()
     
     # Removes old id ("original_id") and recreates wide format of edges with new id ("node_id")
     edges <- edge_list_long %>%
-      select(-original_id) %>%
-      spread(key, node_id)
+      select(-.data$original_id) %>%
+      spread(.data$key, .data$node_id)
     
     # Uses "sourceRef" and "targetRef" (which are now simple ids from 1 till n) to build edge data.frame
     edge_df <-
@@ -377,11 +380,13 @@ create_xml.bpmn <- function(bpmn, ...) {
       g_elements[map_lgl(g_elements, ~ ("node" %in% html_attrs(.x)))]
     
     # Creates table with the numerical node id and coordinates from the node
-    coordinates <- tibble(
-      node_id = as.numeric(nodes %>% html_node("title") %>% html_text()),
-      x = as.numeric(nodes %>% html_node("ellipse") %>% html_attr("cy")),
-      y = as.numeric(nodes %>% html_node("ellipse") %>% html_attr("cx"))
-    )
+    coordinates <-
+      tibble(
+        node_id = as.numeric(nodes %>% html_node("title") %>% html_text()),
+        x = as.numeric(nodes %>% html_node("ellipse") %>% html_attr("cy")),
+        y = as.numeric(nodes %>% html_node("ellipse") %>% html_attr("cx")),
+        .name_repair = "unique"
+      )
     
     # Retrieves heights and widths of BPMN elements
     bpmn_shape_heights <- names(bpmn_shape_dimensions) %>%
@@ -393,13 +398,14 @@ create_xml.bpmn <- function(bpmn, ...) {
     output <- node_keys %>%
       inner_join(coordinates, by = "node_id") %>%
       # Removes "node_id" and renames "original_id" to "id"
-      select(id = original_id, x, y) %>%
-      # Rescales x and y (probably to be further optimized / corrected for height/width of elements)
+      select(id = .data$original_id, .data$x, .data$y) %>%
+      # Rescales x and y
+      # (probably to be further optimized / corrected for height/width of elements)
       mutate(
-        y = 3 * y - 3 * min(y) + as.numeric(max(unlist(
+        y = 3 * .data$y - 3 * min(.data$y) + as.numeric(max(unlist(
           bpmn_shape_heights
         ))) / 2,
-        x = 2 * x - 2 * min(x) + as.numeric(max(unlist(
+        x = 2 * .data$x - 2 * min(.data$x) + as.numeric(max(unlist(
           bpmn_shape_widths
         ))) / 2
       )
@@ -445,13 +451,15 @@ create_xml.bpmn <- function(bpmn, ...) {
            bpmn_shape_dimensions) {
     if (element_incoming == "gateway" &&
         x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_outgoing)] > x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_incoming)]) {
-      # Attaches starting point of sequence flow to the top of the gateway to eventually make a 90-degree angle to the right
+      # Attaches starting point of sequence flow to the top of the gateway
+      # to eventually make a 90-degree angle to the right
       x_extra <- 0
       y_extra <-
         as.numeric(bpmn_shape_dimensions[[element_incoming]][["height"]]) / 2
     } else if (element_incoming == "gateway" &&
                x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_outgoing)] < x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_incoming)]) {
-      # Attaches starting point of sequence flow to the bottom of the gateway to eventually make a 90-degree angle to the right
+      # Attaches starting point of sequence flow to the bottom of the gateway
+      # to eventually make a 90-degree angle to the right
       x_extra <- 0
       y_extra <-
         -as.numeric(bpmn_shape_dimensions[[element_incoming]][["height"]]) / 2
@@ -482,7 +490,8 @@ create_xml.bpmn <- function(bpmn, ...) {
            element_outgoing,
            bpmn_shape_dimensions) {
     if (x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_outgoing)] == x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_incoming)]) {
-      # Sets coordinates of second "waypoint" node by attaching end of sequence flow to the left side of the next element
+      # Sets coordinates of second "waypoint" node by attaching end of sequence flow
+      # to the left side of the next element
       xml_set_attr(
         second_waypoint_node,
         "x",
@@ -492,11 +501,13 @@ create_xml.bpmn <- function(bpmn, ...) {
                    "y",
                    x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_outgoing)])
       
-      # Sets logical variable to FALSE (because a 90-degree angle was not needed to attach sequence flow horizontally)
+      # Sets logical variable to FALSE
+      # (because a 90-degree angle was not needed to attach sequence flow horizontally)
       third_waypoint_node_needed <- FALSE
     } else {
       if (element_incoming == "gateway") {
-        # Sets coordinates of second "waypoint" node to x coordinate of the element and y coordinate of the next element
+        # Sets coordinates of second "waypoint" node to x coordinate of the element
+        # and y coordinate of the next element
         xml_set_attr(second_waypoint_node,
                      "x",
                      x_y_coordinates[["x"]][which(x_y_coordinates[["id"]] == id_incoming)])
@@ -504,7 +515,8 @@ create_xml.bpmn <- function(bpmn, ...) {
                      "y",
                      x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_outgoing)])
       } else {
-        # Sets coordinates of second "waypoint" node to x coordinate of the next element and y coordinate of the element
+        # Sets coordinates of second "waypoint" node to x coordinate of the next element
+        # and y coordinate of the element
         xml_set_attr(second_waypoint_node,
                      "x",
                      x_y_coordinates[["x"]][which(x_y_coordinates[["id"]] == id_outgoing)])
@@ -513,7 +525,8 @@ create_xml.bpmn <- function(bpmn, ...) {
                      x_y_coordinates[["y"]][which(x_y_coordinates[["id"]] == id_incoming)])
       }
       
-      # Sets logical variable to TRUE (because a 90-degree angle was needed to attach sequence flow horizontally)
+      # Sets logical variable to TRUE
+      # (because a 90-degree angle was needed to attach sequence flow horizontally)
       third_waypoint_node_needed <- TRUE
     }
     
@@ -577,7 +590,8 @@ create_xml.bpmn <- function(bpmn, ...) {
     element_outgoing <-
       unique(incoming_outgoing_elements_df[["element"]][which(incoming_outgoing_elements_df[["id"]] == id_outgoing)])[[1]]
     
-    # Adds two "waypoint" nodes as children from "BPMNEdge" node (because there will always be one starting point and one end point of the sequence flow)
+    # Adds two "waypoint" nodes as children from "BPMNEdge" node
+    # (because there will always be one starting point and one end point of the sequence flow)
     first_waypoint_node <-
       .xml.add.and.return.child(child_BPMNPlane_node, "di:waypoint")
     second_waypoint_node <-
@@ -692,7 +706,8 @@ create_xml.bpmn <- function(bpmn, ...) {
            BPMNDiagram_node,
            plural_of_bpmn_elements,
            bpmn_shape_dimensions) {
-    # Adds "BPMNPlane" node as a child from "BPMNDiagram" node (which is the "BPMNDiagram" container of "BPMNShape" and "BPMNEdge")
+    # Adds "BPMNPlane" node as a child from "BPMNDiagram" node
+    # (which is the "BPMNDiagram" container of "BPMNShape" and "BPMNEdge")
     BPMNPlane_node <-
       .xml.add.and.return.child(BPMNDiagram_node, "bpmndi:BPMNPlane")
     xml_set_attr(BPMNPlane_node,

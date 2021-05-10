@@ -9,7 +9,8 @@ library("purrr")
 
 #' Create BPMN object.
 #'
-#' This creates a BPMN object by specifying a set of tasks, sequence flows, gateways, and a start and end event.
+#' This creates a BPMN object by specifying a set of tasks, sequence flows,
+#' gateways, and a start and end event.
 #'
 #' @param tasks A data.frame of all tasks and their attributes.
 #' @param sequenceFlows A data.frame of all sequence flows and their attributes.
@@ -18,15 +19,15 @@ library("purrr")
 #' @param endEvent A data.frame containing the end event and its attributes.
 #' @param ... Additional arguments passed to methods.
 #'
-#' @return A BPMN object as a list of data.frames for the BPMN elements and an XML document for the XML-based interchange format for the BPMN process.
+#' @return A BPMN object as a list of data.frames for the BPMN elements and an
+#'   XML document for the XML-based interchange format for the BPMN process.
 #'
 #' @author Alessio Nigro
 #'
-#' @importFrom assertive assert_is_data.frame
-#' @importFrom assertive is_empty
-#' @importFrom assertive is_non_empty
-#' @import knitr
 #' @import purrr
+#' @importFrom assertive assert_is_data.frame
+#' @importFrom assertive is_non_empty
+#' @importFrom knitr combine_words
 #'
 #' @export
 create_bpmn <-
@@ -131,12 +132,10 @@ create_bpmn <-
 
 # Prints message about the BPMN elements
 .print.message <-
-  function(bpmn,
+  function(bpmn_lgl,
            message_string,
            elements_empty_allowed) {
-    bpmn %>%
-      bpmn[.] %>%
-      names() %>%
+    names(bpmn_lgl)[bpmn_lgl] %>%
       map(~ .print.output(.x, message_string, elements_empty_allowed))
   }
 

@@ -15,11 +15,21 @@ library("huxtable")
 #'
 #' @author Alessio Nigro
 #'
+#' @import htmltools
 #' @importFrom assertive is_empty
 #' @importFrom DT datatable
 #' @importFrom htmltidy xml_view
-#' @import htmltools
-#' @import huxtable
+#' @importFrom huxtable as_hux
+#' @importFrom huxtable everywhere
+#' @importFrom huxtable print_screen
+#' @importFrom huxtable set_all_borders
+#' @importFrom huxtable set_all_border_colors
+#' @importFrom huxtable set_all_padding
+#' @importFrom huxtable set_caption
+#' @importFrom huxtable set_caption_pos
+#' @importFrom huxtable set_header_rows
+#' @importFrom huxtable set_outer_padding
+#' @importFrom huxtable style_headers
 #'
 #' @rdname print
 #' @export
